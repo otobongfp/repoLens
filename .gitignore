@@ -1,0 +1,62 @@
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+*.pyo
+*.pyd
+*.pdb
+*.egg-info/
+*.egg
+*.log
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+.Python
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build outputs
+build/
+dist/
+*.so
+
+# VSCode/IDE
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Coverage
+.coverage
+htmlcov/
+.tox/
+.cache/
+pytest_cache/
+coverage.xml
+
+# Misc
+*.bak
+*.swp
+*.tmp
+*.orig
+*.rej
