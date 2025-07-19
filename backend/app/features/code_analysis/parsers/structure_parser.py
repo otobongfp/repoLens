@@ -1,20 +1,41 @@
 import os
 import logging
 from collections import Counter
-from tree_sitter import Language, Parser
-from app.parser.utils import find_files_with_extension
-from app.models.response import RepoGraphResponse, Node, Edge, Summary
-
-
-# Load compiled grammar
-LIB_PATH = "build/my-languages.so"
-
-LANGUAGES = {
-    ".ts": Language(LIB_PATH, "typescript"),
-    ".tsx": Language(LIB_PATH, "tsx"),
-}
+from tree_sitter import Parser, Language
+from app.shared.services.file_service import FileService
+from app.features.code_analysis.models.response import RepoGraphResponse, Node, Edge, Summary
 
 logger = logging.getLogger(__name__)
+
+# Use individual language packages
+def get_language_for_extension(ext):
+    """Get language for file extension using individual language packages."""
+    try:
+        if ext == ".ts":
+            from tree_sitter_typescript import language_typescript
+            return Language(language_typescript())
+        elif ext == ".tsx":
+            from tree_sitter_typescript import language_tsx
+            return Language(language_tsx())
+        elif ext == ".js":
+            # For JavaScript, we'll use TypeScript parser as it handles JS too
+            from tree_sitter_typescript import language_typescript
+            return Language(language_typescript())
+        elif ext == ".jsx":
+            # For JSX, we'll use TSX parser as it handles JSX
+            from tree_sitter_typescript import language_tsx
+            return Language(language_tsx())
+    except Exception as e:
+        logger.error(f"Failed to load language for {ext}: {e}")
+        return None
+    return None
+
+LANGUAGES = {
+    ".ts": "typescript",
+    ".tsx": "tsx",
+    ".js": "javascript",
+    ".jsx": "javascript",
+}
 
 def extract_identifier(node, code):
     if node.type in ("identifier", "property_identifier", "name"):
@@ -71,6 +92,10 @@ def walk_ast(node, code, file_node_id, nodes, edges, file_path, rel_file_path, c
         if name:
             func_id = f"func:{rel_file_path}:{name}"
             start_line, end_line = get_node_line_info(node)
+            
+            # Extract function code content
+            function_code = code[node.start_byte:node.end_byte].decode('utf-8', errors='ignore')
+            
             nodes.append({
                 "id": func_id,
                 "label": name,
@@ -79,7 +104,8 @@ def walk_ast(node, code, file_node_id, nodes, edges, file_path, rel_file_path, c
                 "meta": {
                     "start_line": start_line,
                     "end_line": end_line,
-                    "parent_file": rel_file_path
+                    "parent_file": rel_file_path,
+                    "code": function_code
                 }
             })
             edges.append({
@@ -97,20 +123,35 @@ def walk_ast(node, code, file_node_id, nodes, edges, file_path, rel_file_path, c
                 })
             # Set this as the current function for nested calls
             current_function_id = func_id
-    elif node.type == "class_declaration":
+    elif node.type in ["class_declaration", "interface_declaration", "type_alias_declaration"]:
         name = extract_identifier(node, code)
         if name:
-            class_id = f"class:{rel_file_path}:{name}"
+            # Determine the type based on node type
+            if node.type == "class_declaration":
+                node_type = "class"
+                class_id = f"class:{rel_file_path}:{name}"
+            elif node.type == "interface_declaration":
+                node_type = "interface"
+                class_id = f"interface:{rel_file_path}:{name}"
+            else:  # type_alias_declaration
+                node_type = "type"
+                class_id = f"type:{rel_file_path}:{name}"
+            
             start_line, end_line = get_node_line_info(node)
+            
+            # Extract code content
+            code_content = code[node.start_byte:node.end_byte].decode('utf-8', errors='ignore')
+            
             nodes.append({
                 "id": class_id,
                 "label": name,
-                "type": "class",
+                "type": node_type,
                 "path": rel_file_path,
                 "meta": {
                     "start_line": start_line,
                     "end_line": end_line,
-                    "parent_file": rel_file_path
+                    "parent_file": rel_file_path,
+                    "code": code_content
                 }
             })
             edges.append({
@@ -254,33 +295,45 @@ def parse_repo(repo_path: str) -> RepoGraphResponse:
     nodes = []
     edges = []
     import_counter = Counter()
-    files = find_files_with_extension(repo_path, list(LANGUAGES.keys()))
+    files = FileService.find_files_with_extension(repo_path, list(LANGUAGES.keys()))
     logger.info("Files found: %s", files)
     total_functions = 0
     total_classes = 0
     
     # First pass: collect all nodes
     for file_path in files:
-        ext = os.path.splitext(file_path)[-1]
-        language = LANGUAGES.get(ext)
+        ext = FileService.get_file_extension(file_path)
+        language_name = LANGUAGES.get(ext)
+        if not language_name:
+            continue
+        language = get_language_for_extension(ext)
         if not language:
             continue
         parser = Parser()
-        parser.set_language(language)
+        parser.language = language
         with open(file_path, "rb") as f:
             code = f.read()
         tree = parser.parse(code)
         root_node = tree.root_node
-        rel_file_path = os.path.relpath(file_path, repo_path)
+        rel_file_path = FileService.get_relative_path(file_path, repo_path)
         file_node_id = f"file:{rel_file_path}"
+        # Read file content
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                file_content = f.read()
+        except UnicodeDecodeError:
+            # Fallback for binary files or encoding issues
+            file_content = code.decode('utf-8', errors='ignore')
+        
         nodes.append({
             "id": file_node_id,
-            "label": os.path.basename(file_path),
+            "label": FileService.get_file_name(file_path),
             "type": "file",
             "path": rel_file_path,
             "meta": {
                 "abs_path": file_path,
-                "rel_path": rel_file_path
+                "rel_path": rel_file_path,
+                "content": file_content
             }
         })
         walk_ast(root_node, code, file_node_id, nodes, edges, file_path, rel_file_path, import_counter=import_counter)
@@ -305,5 +358,4 @@ def parse_repo(repo_path: str) -> RepoGraphResponse:
             totalClasses=total_classes,
             topImports=top_imports
         )
-    )
- 
+    ) 

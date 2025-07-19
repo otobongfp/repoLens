@@ -1,20 +1,41 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routes.analyze import router as analyze_router
-from app.routes.ai_analysis import router as ai_router
+from app.features.code_analysis.controllers.analysis_controller import router as analyze_router
+from app.features.ai_analysis.controllers.ai_controller import router as ai_router
 
-app = FastAPI()
+app = FastAPI(
+    title="RepoLens API",
+    description="AI-powered codebase analysis and visualization API",
+    version="1.0.0"
+)
+
+# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"], #TODO:update later
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# Include feature routers
 app.include_router(analyze_router)
 app.include_router(ai_router)
 
 @app.get("/")
 def root():
-    return {"message": "RepoLens API is live"}
+    """Health check endpoint."""
+    return {
+        "message": "RepoLens API is live",
+        "version": "1.0.0",
+        "features": ["code_analysis", "ai_analysis"]
+    }
+
+@app.get("/health")
+def health_check():
+    """Detailed health check endpoint."""
+    return {
+        "status": "healthy",
+        "service": "RepoLens API",
+        "version": "1.0.0"
+    }

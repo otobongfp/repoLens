@@ -1,33 +1,61 @@
 # Backend Development Guide
 
-This guide explains how to set up, develop, and extend the RepoLens backend, including working with Tree-sitter grammars and enabling AI features.
+## Overview
+
+This guide covers backend development for RepoLens, including setup, architecture, and best practices. **Note:** As of the latest update, we no longer use custom Tree-sitter grammars or build scripts. We now use pre-built Tree-sitter language packages for code parsing, and the AI analysis system is being upgraded to support advanced token limit strategies.
 
 ---
 
-## 1. Backend Overview
+## 1. Setup
 
-- **Framework:** FastAPI (Python)
-- **Parsing:** Tree-sitter (for TypeScript, TSX, and more)
-- **AI Analysis:** OpenAI GPT (optional, for code quality and security insights)
+### Prerequisites
 
----
+- Python 3.9+
+- (Recommended) Virtual environment
+- OpenAI API key (for AI features)
 
-## 2. Getting Started
-
-### 2.1. Clone and Install
+### Installation
 
 ```bash
 cd backend
-python -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 2.2. Environment Variables
+### Environment Variables
 
-- Copy `.env.example` to `.env` and set your OpenAI API key if you want AI features.
+Copy `.env.example` to `.env` and set your OpenAI API key and other settings as needed.
 
-### 2.3. Running the Backend
+---
+
+## 2. Architecture
+
+- **FastAPI** backend
+- **Tree-sitter** (pre-built language packages) for code parsing
+- **OpenAI** for AI-powered code analysis
+- **Modular features**: code analysis, AI analysis, etc.
+
+---
+
+## 3. Code Parsing
+
+- We **no longer build or compile grammars**.
+- The backend uses **pre-built Tree-sitter language packages** (e.g., `tree-sitter-typescript`).
+- All grammar build scripts and custom grammar directories have been removed.
+- If you need to support a new language, install the appropriate pre-built Tree-sitter package.
+
+---
+
+## 4. AI Analysis
+
+- The AI analysis system uses OpenAI's GPT models.
+- We are moving towards **advanced token limit strategies** (see `TOKEN_LIMIT_STRATEGIES.md`).
+- The system is designed to handle large codebases by chunking, hierarchical context, and semantic search.
+
+---
+
+## 5. Running the Backend
 
 ```bash
 uvicorn app.main:app --reload
@@ -35,78 +63,29 @@ uvicorn app.main:app --reload
 
 ---
 
-## 3. Tree-sitter Grammar Setup
+## 6. Testing
 
-### 3.1. What is Tree-sitter?
-
-Tree-sitter is a fast, incremental parsing system for programming tools. RepoLens uses it to extract files, functions, classes, imports, and call relationships from your codebase.
-
-### 3.2. Building Grammars
-
-#### **Option 1: Use Prebuilt Grammars (Recommended)**
-
-- Install `tree_sitter_languages`:
-  ```bash
-  pip install tree_sitter-languages
-  ```
-- In your code, use:
-  ```python
-  from tree_sitter_languages import get_language
-  ts_lang = get_language("typescript")
-  ```
-
-#### **Option 2: Build Your Own .so File**
-
-- Clone the grammar repo (e.g., [tree-sitter-typescript](https://github.com/tree-sitter/tree-sitter-typescript))
-- Build the shared library:
-  ```python
-  from tree_sitter import Language
-  Language.build_library(
-    'build/my-languages.so',
-    [
-      'tree-sitter-typescript/typescript',
-      'tree-sitter-typescript/tsx',
-    ]
-  )
-  ```
-- Load the language (API depends on your tree_sitter version):
-  - For **tree_sitter < 0.20.0**:
-    ```python
-    ts_lang = Language('build/my-languages.so', 'typescript')
-    ```
-  - For **tree_sitter >= 0.20.0**:
-    ```python
-    ts_lang = Language.load('build/tree-sitter-typescript.so')
-    ```
+- Use `pytest` for backend tests (if/when available).
+- Ensure your environment variables are set for any tests that require OpenAI.
 
 ---
 
-## 4. Contributing
+## 7. Contributing
 
-- Fork the repo and create a feature branch
-- Write clear, well-documented code
-- Add or update tests if needed
-- Open a pull request with a clear description
-
----
-
-## 5. Troubleshooting
-
-- **Grammar loading errors:**
-  - Ensure your `tree_sitter` and `tree_sitter_languages` versions are compatible
-  - Rebuild your `.so` file if you change grammars
-- **AI analysis errors:**
-  - Check your OpenAI API key and environment variables
-  - See [AI_SETUP.md](AI_SETUP.md) for more
-- **General Python issues:**
-  - Use a virtual environment
-  - Check for missing dependencies
+- Follow standard Python best practices.
+- Write clear, modular code.
+- Document new features and update this guide as needed.
 
 ---
 
-## 7. Useful Links
+## 8. Troubleshooting
 
-- [Tree-sitter](https://tree-sitter.github.io/tree-sitter/)
-- [tree-sitter-languages PyPI](https://pypi.org/project/tree-sitter-languages/)
-- [FastAPI](https://fastapi.tiangolo.com/)
-- [OpenAI API](https://platform.openai.com/docs/api-reference)
+- If AI analysis is disabled, check your OpenAI API key and environment variables.
+- For code parsing issues, ensure the correct pre-built Tree-sitter packages are installed.
+
+---
+
+## 9. References
+
+- [AI Setup Guide](AI_SETUP.md)
+- [Token Limit Strategies](docs/TOKEN_LIMIT_STRATEGIES.md)
