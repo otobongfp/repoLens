@@ -14,7 +14,8 @@ RepoLens is a full-stack codebase visualization and AI analysis tool. It helps d
 ## Architecture
 
 - **Frontend**: Next.js (React, TypeScript, D3.js)
-- **Backend**: FastAPI (Python), Tree-sitter for code parsing, OpenAI for AI analysis
+- **Backend**: FastAPI (Python), for AI analysis
+- **Repolens-agent**: CLI Background agent (Rust), Tree-sitter for code parsing, and file analysis with local API exposed to web (Repo)[https://github.com/otobongfp/repolens-agent]
 
 ## Quick Start
 
