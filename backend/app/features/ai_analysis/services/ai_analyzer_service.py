@@ -7,15 +7,10 @@ import os
 
 logger = logging.getLogger(__name__)
 
-print("DEBUG: OPENAI_API_KEY at service init:", os.getenv("OPENAI_API_KEY"))
-print("DEBUG: AI_ANALYSIS_ENABLED at service init:", os.getenv("AI_ANALYSIS_ENABLED"))
-
 class AIAnalyzerService:
     """Service for AI-powered code analysis."""
     
     def __init__(self):
-        print("DEBUG: config.OPENAI_API_KEY:", config.OPENAI_API_KEY)
-        print("DEBUG: config.AI_ANALYSIS_ENABLED:", config.AI_ANALYSIS_ENABLED)
         # Simple cache for analysis results
         self._analysis_cache = {}
         if not config.OPENAI_API_KEY:
@@ -26,7 +21,6 @@ class AIAnalyzerService:
             try:
                 # Try different initialization methods for compatibility
                 try:
-                    print(config.OPENAI_API_KEY)
                     self.client = OpenAI(api_key=config.OPENAI_API_KEY)
                 except TypeError as e:
                     if "proxies" in str(e):

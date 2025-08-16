@@ -54,7 +54,7 @@ export default function Sidebar() {
       </p>
       <form onSubmit={handleAsk} className="flex flex-col gap-2 mb-4">
         <textarea
-          className="border border-white/10 bg-background text-white rounded p-2 resize-none h-20 focus:outline-none focus:ring-2 focus:ring-primary"
+          className="border border-white/10 bg-background text-black rounded p-2 resize-none h-20 focus:outline-none focus:ring-2 focus:ring-primary"
           placeholder={
             !graph || !graph.nodes
               ? "Please analyze a repository first..."

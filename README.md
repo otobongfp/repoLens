@@ -8,9 +8,9 @@ Whether you're a beginner learning to code, a student completing assignments, or
 
 ---
 
-## ✨ Features
+## Features
 
-### 🧑‍🏫 Learning & Education
+### Learning & Education
 
 - **Learning Paths** – structured challenges and project-based tasks to guide learners.
 - **Task Management** – create, assign, and track coding exercises or projects.
@@ -18,7 +18,7 @@ Whether you're a beginner learning to code, a student completing assignments, or
 - **Progress Tracking** – dashboards showing improvement, scores, and completion rates.
 - **AI Feedback & Hints** – contextual suggestions, resources, and improvement tips.
 
-### 🔍 Code Understanding
+### Code Understanding
 
 - **Code Graph Visualization** – explore files, functions, classes, and imports as an interactive graph.
 - **Dependency Matrix** – view file-to-file import relationships in a clear matrix view.
@@ -26,7 +26,7 @@ Whether you're a beginner learning to code, a student completing assignments, or
 - **Heatmaps** – visually identify complexity hotspots in the codebase.
 - **AI Code Insights** – detect vulnerabilities, measure quality, and receive refactoring suggestions.
 
-### 👥 Collaboration & Community
+### Collaboration & Community
 
 - **Assignments for Educators** – instructors can create tasks, auto-grade submissions, and share resources.
 - **Peer & AI Review** – students and developers receive both human and AI feedback.
@@ -34,7 +34,7 @@ Whether you're a beginner learning to code, a student completing assignments, or
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 RepoLens is a hybrid stack designed for extensibility:
 
@@ -46,12 +46,12 @@ RepoLens is a hybrid stack designed for extensibility:
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/your-org/repolens.git
+git clone https://github.com/otobongfp/repolens.git
 cd repolens
 ```
 
@@ -97,7 +97,7 @@ Then open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 
-## 📚 Documentation
+## Documentation
 
 - [Development Guide](backend/DEVELOPMENT.md) – backend setup, grammar building, contributing.
 - [AI Setup](backend/AI_SETUP.md) – enable and configure AI features.
@@ -105,7 +105,7 @@ Then open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 
-## 🛣️ Roadmap
+## Roadmap
 
 - ✅ Repo visualization & AI code analysis
 - 🚧 Automated scoring engine (tests + AI evaluation)
