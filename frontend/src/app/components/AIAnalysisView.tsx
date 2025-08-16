@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import { useGraphData } from "../context/GraphDataProvider";
+import { useRepolensApi } from "../utils/api";
 
 interface AIAnalysisData {
   enabled: boolean;
@@ -15,39 +17,45 @@ interface AIAnalysisData {
   error?: string;
 }
 
-interface AIAnalysisViewProps {
-  graph: any;
-}
-
-export default function AIAnalysisView({ graph }: AIAnalysisViewProps) {
+export default function AIAnalysisView() {
+  const { currentFolder } = useGraphData();
+  const { fetchEnhancedGraph } = useRepolensApi();
   const [analysisData, setAnalysisData] = useState<AIAnalysisData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("overview");
 
   const analyzeCodebase = async () => {
-    if (!graph) return;
+    if (!currentFolder) return;
 
     setLoading(true);
     setError(null);
 
     try {
+      // Fetch enhanced graph from agent
+      const enhancedGraph = await fetchEnhancedGraph(currentFolder);
+      console.log(enhancedGraph);
+      console.log("Enhanced graph:", enhancedGraph);
+      // Send to Python backend for AI analysis
       const response = await fetch("http://localhost:8000/ai/analyze", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ graph_data: graph }),
+        body: JSON.stringify({ graph_data: enhancedGraph }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
+        console.error("AI backend error:", errorData);
         throw new Error(errorData.detail || "AI analysis failed");
       }
 
       const data = await response.json();
+      console.log("AI analysis data:", data);
       setAnalysisData(data);
     } catch (err) {
+      console.error("AI analysis error:", err);
       setError(err instanceof Error ? err.message : "Analysis failed");
     } finally {
       setLoading(false);
@@ -55,10 +63,10 @@ export default function AIAnalysisView({ graph }: AIAnalysisViewProps) {
   };
 
   useEffect(() => {
-    if (graph && graph.nodes && graph.nodes.length > 0) {
+    if (currentFolder) {
       analyzeCodebase();
     }
-  }, [graph]);
+  }, [currentFolder]);
 
   const getScoreColor = (score: number) => {
     if (score >= 8) return "text-green-400";

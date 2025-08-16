@@ -1,6 +1,5 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.features.code_analysis.controllers.analysis_controller import router as analyze_router
 from app.features.ai_analysis.controllers.ai_controller import router as ai_router
 
 app = FastAPI(
@@ -19,7 +18,6 @@ app.add_middleware(
 )
 
 # Include feature routers
-app.include_router(analyze_router)
 app.include_router(ai_router)
 
 @app.get("/")
@@ -28,7 +26,7 @@ def root():
     return {
         "message": "RepoLens API is live",
         "version": "1.0.0",
-        "features": ["code_analysis", "ai_analysis"]
+        "features": ["ai_analysis"]
     }
 
 @app.get("/health")

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
 
 interface HeatmapData {
@@ -13,29 +13,24 @@ interface HeatmapData {
   centrality?: number;
 }
 
-export default function HeatmapView({ graph }: { graph: any }) {
-  const svgRef = useRef<SVGSVGElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+import { useGraphData } from "../context/GraphDataProvider";
 
-  // Guard against invalid graph structure
-  if (!graph || !Array.isArray(graph.nodes) || !Array.isArray(graph.edges)) {
-    return (
-      <div className="text-center text-lg text-primary py-16">
-        Invalid graph data
-      </div>
-    );
-  }
+export default function HeatmapView() {
+  const { graph } = useGraphData();
+  const svgRef = useRef<SVGSVGElement>(null);
+  const [selectedNode, setSelectedNode] = useState<HeatmapData | null>(null);
 
   useEffect(() => {
-    if (!svgRef.current || !containerRef.current || !graph) return;
+    if (!graph || !svgRef.current) return;
 
-    // Clear previous content
-    d3.select(svgRef.current).selectAll("*").remove();
+    const svg = d3.select(svgRef.current);
+    svg.selectAll("*").remove();
 
-    // Remove any existing tooltips
-    d3.selectAll(".tooltip").remove();
+    const width = 800;
+    const height = 600;
+    const margin = { top: 20, right: 20, bottom: 20, left: 20 };
 
-    // Calculate heat values for each node
+    // Calculate heatmap data for each node
     const heatmapData: HeatmapData[] = graph.nodes.map((node: any) => {
       // Count connections (in-degree + out-degree)
       const inEdges = graph.edges.filter((e: any) => e.to === node.id);
@@ -47,16 +42,22 @@ export default function HeatmapView({ graph }: { graph: any }) {
         node.type === "file"
           ? graph.nodes.filter(
               (n: any) =>
-                n.type === "function" && n.meta?.source_file === node.path
+                n.type === "function" &&
+                graph.edges.some(
+                  (e: any) =>
+                    e.type === "contains" && e.from === node.id && e.to === n.id
+                )
             ).length
           : 0;
 
-      // Count imports in this file
-      const importsInFile =
+      // Count local imports in this file
+      const localImportsInFile =
         node.type === "file"
-          ? graph.nodes.filter(
-              (n: any) =>
-                n.type === "import" && n.meta?.source_file === node.path
+          ? graph.edges.filter(
+              (e: any) =>
+                e.type === "imports" &&
+                e.from === node.id &&
+                e.meta?.local === true
             ).length
           : 0;
 
@@ -74,10 +75,11 @@ export default function HeatmapView({ graph }: { graph: any }) {
       // Calculate heat score based on node type
       let heat = 0;
       if (node.type === "file") {
-        heat = functionsInFile * 2 + importsInFile * 1.5 + totalConnections * 3;
+        heat =
+          functionsInFile * 2 + localImportsInFile * 1.5 + totalConnections * 3;
       } else if (node.type === "function") {
         heat = functionCalls * 4 + totalConnections * 2;
-      } else if (node.type === "import") {
+      } else if (node.type === "module") {
         heat = totalConnections * 1.5;
       } else {
         heat = totalConnections * 2;
@@ -90,321 +92,211 @@ export default function HeatmapView({ graph }: { graph: any }) {
         type: node.type,
         heat,
         functions: functionsInFile,
-        imports: importsInFile,
+        imports: localImportsInFile,
         calls: functionCalls,
         centrality,
       };
     });
 
     // Filter out nodes with zero heat for cleaner visualization
-    const activeData = heatmapData.filter((d) => d.heat > 0);
+    const activeData = heatmapData.filter((d: HeatmapData) => d.heat > 0);
 
     if (activeData.length === 0) {
+      svg
+        .append("text")
+        .attr("x", width / 2)
+        .attr("y", height / 2)
+        .attr("text-anchor", "middle")
+        .attr("fill", "#888")
+        .text("No data to visualize");
       return;
     }
 
-    // Sort by heat value (descending)
-    activeData.sort((a, b) => b.heat - a.heat);
-
-    // Setup dimensions
-    const container = containerRef.current;
-    const width = container.clientWidth;
-    const height = Math.max(400, activeData.length * 30 + 100);
-
-    // Setup SVG
-    const svg = d3
-      .select(svgRef.current)
-      .attr("width", width)
-      .attr("height", height);
-
-    // Create color scale
-    const maxHeat = d3.max(activeData, (d) => d.heat) || 1;
-    const colorScale = d3
-      .scaleSequential()
-      .domain([0, maxHeat])
-      .interpolator(d3.interpolateRgb("#1e293b", "#f59e0b")); // slate-800 to amber-500
+    // Sort by heat for better visualization
+    activeData.sort((a: HeatmapData, b: HeatmapData) => b.heat - a.heat);
 
     // Create scales
     const xScale = d3
       .scaleBand()
-      .domain(["heat", "functions", "imports", "calls", "centrality"])
-      .range([100, width - 20])
+      .domain(activeData.map((d: HeatmapData) => d.id))
+      .range([margin.left, width - margin.right])
       .padding(0.1);
 
     const yScale = d3
-      .scaleBand()
-      .domain(activeData.map((d) => d.id))
-      .range([60, height - 40])
-      .padding(0.1);
+      .scaleLinear()
+      .domain([0, d3.max(activeData, (d: HeatmapData) => d.heat) || 0])
+      .range([height - margin.bottom, margin.top]);
 
-    // Add background
+    const colorScale = d3
+      .scaleSequential()
+      .domain([0, d3.max(activeData, (d: HeatmapData) => d.heat) || 0])
+      .interpolator(d3.interpolateReds);
+
+    // Create bars
     svg
+      .selectAll("rect")
+      .data(activeData)
+      .enter()
       .append("rect")
-      .attr("width", width)
-      .attr("height", height)
-      .attr("fill", "#0f172a"); // slate-900
+      .attr("x", (d) => xScale(d.id) || 0)
+      .attr("y", (d) => yScale(d.heat))
+      .attr("width", xScale.bandwidth())
+      .attr("height", (d) => height - margin.bottom - yScale(d.heat))
+      .attr("fill", (d) => colorScale(d.heat))
+      .attr("stroke", "#333")
+      .attr("stroke-width", 1)
+      .style("cursor", "pointer")
+      .on("click", function (event, d) {
+        setSelectedNode(d);
+      })
+      .on("mouseover", function (event, d) {
+        d3.select(this).attr("stroke", "#fff").attr("stroke-width", 2);
 
-    // Add title
-    svg
-      .append("text")
-      .attr("x", width / 2)
-      .attr("y", 25)
-      .attr("text-anchor", "middle")
-      .attr("fill", "#f59e0b")
-      .attr("font-size", "18px")
-      .attr("font-weight", "bold")
-      .text("Code Usage Heatmap");
-
-    // Add column headers
-    const columnHeaders = [
-      { key: "heat", label: "Heat Score" },
-      { key: "functions", label: "Functions" },
-      { key: "imports", label: "Imports" },
-      { key: "calls", label: "Calls" },
-      { key: "centrality", label: "Centrality" },
-    ];
-
-    columnHeaders.forEach((col, i) => {
-      svg
-        .append("text")
-        .attr("x", xScale(col.key)! + xScale.bandwidth() / 2)
-        .attr("y", 50)
-        .attr("text-anchor", "middle")
-        .attr("fill", "#e2e8f0")
-        .attr("font-size", "12px")
-        .attr("font-weight", "bold")
-        .text(col.label);
-    });
-
-    // Create heatmap cells
-    activeData.forEach((d, i) => {
-      const y = yScale(d.id)!;
-
-      // Add row label (node name)
-      svg
-        .append("text")
-        .attr("x", 95)
-        .attr("y", y + yScale.bandwidth() / 2 + 4)
-        .attr("text-anchor", "end")
-        .attr("fill", "#e2e8f0")
-        .attr("font-size", "11px")
-        .attr("font-family", "monospace")
-        .text(d.label.length > 20 ? d.label.substring(0, 17) + "..." : d.label);
-
-      // Add type indicator
-      svg
-        .append("text")
-        .attr("x", 5)
-        .attr("y", y + yScale.bandwidth() / 2 + 4)
-        .attr("text-anchor", "start")
-        .attr("fill", getTypeColor(d.type))
-        .attr("font-size", "10px")
-        .attr("font-weight", "bold")
-        .text(d.type.charAt(0).toUpperCase());
-
-      // Create cells for each metric
-      const metrics = [
-        { key: "heat", value: d.heat, color: colorScale(d.heat) },
-        {
-          key: "functions",
-          value: d.functions || 0,
-          color: d.functions ? "#10b981" : "#374151",
-        },
-        {
-          key: "imports",
-          value: d.imports || 0,
-          color: d.imports ? "#3b82f6" : "#374151",
-        },
-        {
-          key: "calls",
-          value: d.calls || 0,
-          color: d.calls ? "#f59e0b" : "#374151",
-        },
-        {
-          key: "centrality",
-          value: d.centrality || 0,
-          color: d.centrality ? "#8b5cf6" : "#374151",
-        },
-      ];
-
-      metrics.forEach((metric) => {
-        const x = xScale(metric.key)!;
-        const cellWidth = xScale.bandwidth();
-        const cellHeight = yScale.bandwidth();
-
-        // Add cell background with tooltip functionality
-        const rect = svg
-          .append("rect")
-          .attr("x", x)
-          .attr("y", y)
-          .attr("width", cellWidth)
-          .attr("height", cellHeight)
-          .attr("fill", metric.color)
-          .attr("stroke", "#374151")
-          .attr("stroke-width", 1)
-          .attr("rx", 2)
-          .style("cursor", "pointer");
-
-        // Add value text
-        svg
-          .append("text")
-          .attr("x", x + cellWidth / 2)
-          .attr("y", y + cellHeight / 2 + 4)
-          .attr("text-anchor", "middle")
-          .attr("fill", getTextColor(metric.color))
-          .attr("font-size", "11px")
-          .attr("font-weight", "bold")
-          .text(metric.value.toFixed(1));
-
-        // Add tooltip
-        const tooltip = d3
-          .select("body")
-          .append("div")
+        // Show tooltip
+        const tooltip = svg
+          .append("g")
           .attr("class", "tooltip")
-          .style("position", "absolute")
-          .style("background", "#1e293b")
-          .style("color", "#e2e8f0")
-          .style("padding", "8px")
-          .style("border-radius", "4px")
+          .attr(
+            "transform",
+            `translate(${event.pageX + 10}, ${event.pageY - 10})`
+          );
+
+        tooltip
+          .append("rect")
+          .attr("width", 200)
+          .attr("height", 80)
+          .attr("fill", "rgba(0,0,0,0.8)")
+          .attr("rx", 5);
+
+        tooltip
+          .append("text")
+          .attr("x", 10)
+          .attr("y", 20)
+          .attr("fill", "white")
           .style("font-size", "12px")
-          .style("pointer-events", "none")
-          .style("opacity", 0)
-          .style("z-index", 1000)
-          .style("border", "1px solid #374151");
+          .text(`${d.label} (${d.type})`);
 
-        rect
-          .on("mouseover", function (event) {
-            const tooltipContent = `
-              <strong>${d.label}</strong><br/>
-              Type: ${d.type}<br/>
-              ${metric.key}: ${metric.value.toFixed(2)}<br/>
-              ${d.path ? `Path: ${d.path}` : ""}
-            `;
-            tooltip.html(tooltipContent).style("opacity", 1);
-          })
-          .on("mousemove", function (event) {
-            tooltip
-              .style("left", event.pageX + 10 + "px")
-              .style("top", event.pageY - 10 + "px");
-          })
-          .on("mouseout", function () {
-            tooltip.style("opacity", 0);
-          });
+        tooltip
+          .append("text")
+          .attr("x", 10)
+          .attr("y", 35)
+          .attr("fill", "white")
+          .style("font-size", "10px")
+          .text(`Heat: ${d.heat.toFixed(1)}`);
+
+        if (d.functions !== undefined) {
+          tooltip
+            .append("text")
+            .attr("x", 10)
+            .attr("y", 50)
+            .attr("fill", "white")
+            .style("font-size", "10px")
+            .text(`Functions: ${d.functions}`);
+        }
+
+        if (d.imports !== undefined) {
+          tooltip
+            .append("text")
+            .attr("x", 10)
+            .attr("y", 65)
+            .attr("fill", "white")
+            .style("font-size", "10px")
+            .text(`Local Imports: ${d.imports}`);
+        }
+      })
+      .on("mouseout", function () {
+        d3.select(this).attr("stroke", "#333").attr("stroke-width", 1);
+        svg.selectAll(".tooltip").remove();
       });
-    });
 
-    // Add legend
-    const legend = svg
+    // Add axis
+    const yAxis = d3.axisLeft(yScale);
+    svg
       .append("g")
-      .attr("transform", `translate(20, ${height - 80})`);
+      .attr("transform", `translate(${margin.left}, 0)`)
+      .call(yAxis);
 
-    legend
-      .append("text")
-      .attr("x", 0)
-      .attr("y", -10)
-      .attr("fill", "#e2e8f0")
-      .attr("font-size", "12px")
-      .attr("font-weight", "bold")
-      .text("Legend:");
-
-    const legendItems = [
-      { color: "#f59e0b", label: "Heat Score" },
-      { color: "#10b981", label: "Functions" },
-      { color: "#3b82f6", label: "Imports" },
-      { color: "#f59e0b", label: "Calls" },
-      { color: "#8b5cf6", label: "Centrality" },
-    ];
-
-    legendItems.forEach((item, i) => {
-      const x = i * 120;
-      legend
-        .append("rect")
-        .attr("x", x)
-        .attr("y", 0)
-        .attr("width", 12)
-        .attr("height", 12)
-        .attr("fill", item.color)
-        .attr("rx", 2);
-
-      legend
-        .append("text")
-        .attr("x", x + 18)
-        .attr("y", 10)
-        .attr("fill", "#e2e8f0")
-        .attr("font-size", "11px")
-        .text(item.label);
-    });
-
-    // Add type legend
-    const typeLegend = svg
+    // Remove x-axis labels to avoid congestion
+    const xAxis = d3.axisBottom(xScale).tickFormat(() => "");
+    svg
       .append("g")
-      .attr("transform", `translate(20, ${height - 40})`);
-
-    typeLegend
-      .append("text")
-      .attr("x", 0)
-      .attr("y", -10)
-      .attr("fill", "#e2e8f0")
-      .attr("font-size", "12px")
-      .attr("font-weight", "bold")
-      .text("Types:");
-
-    const types = [
-      { color: "#10b981", label: "File" },
-      { color: "#3b82f6", label: "Function" },
-      { color: "#f59e0b", label: "Import" },
-    ];
-
-    types.forEach((type, i) => {
-      const x = i * 80;
-      typeLegend
-        .append("circle")
-        .attr("cx", x + 6)
-        .attr("cy", 0)
-        .attr("r", 4)
-        .attr("fill", type.color);
-
-      typeLegend
-        .append("text")
-        .attr("x", x + 16)
-        .attr("y", 4)
-        .attr("fill", "#e2e8f0")
-        .attr("font-size", "11px")
-        .text(type.label);
-    });
+      .attr("transform", `translate(0, ${height - margin.bottom})`)
+      .call(xAxis);
   }, [graph]);
-
-  function getTypeColor(type: string): string {
-    switch (type) {
-      case "file":
-        return "#10b981"; // emerald-500
-      case "function":
-        return "#3b82f6"; // blue-500
-      case "import":
-        return "#f59e0b"; // amber-500
-      default:
-        return "#6b7280"; // gray-500
-    }
-  }
-
-  function getTextColor(bgColor: string): string {
-    // Simple logic to determine text color based on background
-    if (bgColor === "#374151") return "#9ca3af"; // gray-400 for dark backgrounds
-    return "#ffffff"; // white for colored backgrounds
-  }
 
   return (
     <div className="py-4">
-      <h2 className="text-xl font-bold text-primary mb-4">
-        Code Usage Heatmap
-      </h2>
-      <div ref={containerRef} className="w-full overflow-auto">
-        <svg ref={svgRef} className="w-full"></svg>
+      <h2 className="text-xl font-bold text-primary mb-4">Code Heatmap</h2>
+
+      {/* Selected node info */}
+      {selectedNode && (
+        <div className="mb-4 p-3 bg-white/5 rounded border border-white/10">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-primary font-bold">📊</span>
+            <span className="font-semibold text-primary">
+              {selectedNode.label}
+            </span>
+            <span className="text-white/60 text-sm">({selectedNode.type})</span>
+          </div>
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <span className="text-white/70">Heat Score:</span>
+              <span className="ml-2 text-primary font-bold">
+                {selectedNode.heat.toFixed(1)}
+              </span>
+            </div>
+            {selectedNode.functions !== undefined && (
+              <div>
+                <span className="text-white/70">Functions:</span>
+                <span className="ml-2 text-green-400">
+                  {selectedNode.functions}
+                </span>
+              </div>
+            )}
+            {selectedNode.imports !== undefined && (
+              <div>
+                <span className="text-white/70">Local Imports:</span>
+                <span className="ml-2 text-blue-400">
+                  {selectedNode.imports}
+                </span>
+              </div>
+            )}
+            {selectedNode.calls !== undefined && (
+              <div>
+                <span className="text-white/70">Function Calls:</span>
+                <span className="ml-2 text-yellow-400">
+                  {selectedNode.calls}
+                </span>
+              </div>
+            )}
+            {selectedNode.path && (
+              <div className="col-span-2">
+                <span className="text-white/70">Path:</span>
+                <span className="ml-2 text-white/90 font-mono text-xs">
+                  {selectedNode.path}
+                </span>
+              </div>
+            )}
+          </div>
+          <button
+            onClick={() => setSelectedNode(null)}
+            className="mt-2 text-xs text-white/50 hover:text-white/70"
+          >
+            Clear selection
+          </button>
+        </div>
+      )}
+
+      <div className="overflow-auto">
+        <svg
+          ref={svgRef}
+          width="800"
+          height="600"
+          className="bg-background border border-white/10 rounded"
+        />
       </div>
       <div className="mt-4 text-xs text-white/50">
-        Heatmap shows code usage intensity. Higher values indicate more
-        activity, connections, or complexity. Hover over cells for detailed
-        information.
+        Click on bars to see file details. Redder = higher complexity/activity.
       </div>
     </div>
   );

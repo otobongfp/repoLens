@@ -1,7 +1,10 @@
 import { useState } from "react";
-import { askRepoQuestion } from "../utils/api";
+import { useRepolensApi } from "../utils/api";
+import { useGraphData } from "../context/GraphDataProvider";
 
-export default function Sidebar({ graph }: { graph: any }) {
+export default function Sidebar() {
+  const { graph } = useGraphData();
+  const { askRepoQuestion } = useRepolensApi();
   const [question, setQuestion] = useState("");
   const [history, setHistory] = useState<{ q: string; a: string }[]>([]);
   const [loading, setLoading] = useState(false);

@@ -1,6 +1,9 @@
 import React from "react";
 
-export default function DependencyMatrixView({ graph }: { graph: any }) {
+import { useGraphData } from "../context/GraphDataProvider";
+
+export default function DependencyMatrixView() {
+  const { graph } = useGraphData();
   // Guard against invalid graph structure
   if (!graph || !Array.isArray(graph.nodes) || !Array.isArray(graph.edges)) {
     return (
@@ -18,62 +21,20 @@ export default function DependencyMatrixView({ graph }: { graph: any }) {
   // Get all files
   const files = graph.nodes.filter((n: any) => n.type === "file");
 
-  // Helper function to resolve import path to actual file path
-  const resolveImportPath = (importPath: string, sourceFile: string) => {
-    if (!importPath || !sourceFile) return importPath;
-
-    if (importPath.startsWith(".")) {
-      // Relative import - resolve from source file
-      const sourceDir = sourceFile.split("/").slice(0, -1).join("/");
-      const resolvedPath = importPath
-        .replace(/^\.\//, `${sourceDir}/`)
-        .replace(/^\.\.\//, `${sourceDir.split("/").slice(0, -1).join("/")}/`);
-
-      // Try to match with .ts extension
-      if (!resolvedPath.endsWith(".ts") && !resolvedPath.endsWith(".tsx")) {
-        return `${resolvedPath}.ts`;
-      }
-      return resolvedPath;
-    }
-    // External package - return as is
-    return importPath;
-  };
-
   // Build matrix: files x files, true if file A imports file B
   // Also, collect the edge for tooltip
   const matrix = files.map((row: any) =>
     files.map((col: any) => {
-      // Find import edges from this file
-      const importEdges = graph.edges.filter(
-        (e: any) => e.type === "imports" && e.from === row.id
+      // Find import edges from this file to the target file
+      const importEdge = graph.edges.find(
+        (e: any) =>
+          e.type === "imports" &&
+          e.from === row.id &&
+          e.to === col.id &&
+          e.meta?.local === true
       );
 
-      // Check if any of these imports resolve to the target file
-      for (const edge of importEdges) {
-        const importNode = graph.nodes.find(
-          (n: any) => n.id === edge.to && n.type === "import"
-        );
-        if (importNode && importNode.meta) {
-          const resolvedPath = resolveImportPath(
-            importNode.meta.imported_module,
-            importNode.meta.source_file
-          );
-
-          // Check if resolved path matches target file path
-          if (
-            resolvedPath === col.path ||
-            resolvedPath.endsWith(col.label) ||
-            col.path.endsWith(
-              importNode.meta.imported_module
-                .replace(/^\.\//, "")
-                .replace(/^\.\.\//, "")
-            )
-          ) {
-            return edge;
-          }
-        }
-      }
-      return null;
+      return importEdge || null;
     })
   );
 
@@ -118,13 +79,9 @@ export default function DependencyMatrixView({ graph }: { graph: any }) {
                     const edge = matrix[i][j];
                     let tooltip = "";
                     if (edge) {
-                      // Find the import node
-                      const importNode = graph.nodes.find(
-                        (n: any) => n.id === edge.to && n.type === "import"
-                      );
                       tooltip = `From: ${row.path || row.label}\nTo: ${
                         col.path || col.label
-                      }\nImport: ${importNode?.label || "?"}`;
+                      }\nType: Local Import`;
                       if (edge.meta && edge.meta.line) {
                         tooltip += `\nLine: ${edge.meta.line}`;
                       }

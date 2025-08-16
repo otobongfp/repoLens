@@ -1,12 +1,10 @@
 import React, { useState } from "react";
 import VisualizationTabs from "./VisualizationTabs";
 import AIAnalysisView from "./AIAnalysisView";
+import { useGraphData } from "../context/GraphDataProvider";
 
-interface MainTabsProps {
-  graph: any;
-}
-
-export default function MainTabs({ graph }: MainTabsProps) {
+export default function MainTabs() {
+  const { graph } = useGraphData();
   const [activeMode, setActiveMode] = useState<"visualization" | "ai-analysis">(
     "visualization"
   );
@@ -41,8 +39,8 @@ export default function MainTabs({ graph }: MainTabsProps) {
 
       {/* Content */}
       <div className="transition-opacity duration-300">
-        {activeMode === "visualization" && <VisualizationTabs graph={graph} />}
-        {activeMode === "ai-analysis" && <AIAnalysisView graph={graph} />}
+        {activeMode === "visualization" && <VisualizationTabs />}
+        {activeMode === "ai-analysis" && <AIAnalysisView />}
       </div>
     </div>
   );

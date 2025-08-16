@@ -1,20 +1,22 @@
 import { useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
 import NodeDetailsModal from "./NodeDetailsModal";
+import { useGraphData } from "../context/GraphDataProvider";
 
 export default function GraphView({
-  graph,
   fullscreen,
   setFullscreen,
 }: {
-  graph: any;
   fullscreen?: boolean;
   setFullscreen?: (v: boolean) => void;
 }) {
+  const { graph } = useGraphData();
   const svgRef = useRef<SVGSVGElement | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [browserFullscreen, setBrowserFullscreen] = useState(false);
   const [selectedNode, setSelectedNode] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState(1);
 
   // Browser fullscreen functions
   const enterBrowserFullscreen = () => {
@@ -63,23 +65,54 @@ export default function GraphView({
   }, []);
 
   useEffect(() => {
-    if (!graph || !Array.isArray(graph.nodes) || !Array.isArray(graph.edges)) {
+    if (
+      !graph ||
+      !Array.isArray(graph.nodes) ||
+      !Array.isArray(graph.edges) ||
+      !svgRef.current ||
+      !containerRef.current
+    ) {
       return;
     }
+
+    const container = containerRef.current;
+    const containerRect = container.getBoundingClientRect();
 
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove();
 
-    // Use full browser dimensions when in browser fullscreen
-    const width = browserFullscreen ? window.innerWidth : 800;
+    // Use full browser dimensions when in browser fullscreen, otherwise use container dimensions
+    const width = browserFullscreen
+      ? window.innerWidth
+      : Math.max(800, containerRect.width);
     const height = browserFullscreen ? window.innerHeight : 600;
 
     svg.attr("width", width).attr("height", height);
+
+    // Create main group for zoom/pan
+    const g = svg.append("g");
+
+    // Add zoom behavior
+    const zoom = d3
+      .zoom()
+      .scaleExtent([0.1, 5]) // Allow more extreme zoom levels for complex graphs
+      .on("zoom", (event) => {
+        g.attr("transform", event.transform);
+        setZoomLevel(event.transform.k);
+      });
+
+    svg.call(zoom as any);
 
     const nodes = graph.nodes.map((n: any) => ({ ...n }));
 
     // Create a set of valid node IDs for quick lookup
     const validNodeIds = new Set(nodes.map((n: any) => n.id));
+
+    console.log("Graph data:", {
+      nodes: graph.nodes.length,
+      edges: graph.edges.length,
+    });
+    console.log("Sample edges:", graph.edges.slice(0, 5));
 
     // Filter edges to only include those where both source and target nodes exist
     const links = graph.edges
@@ -102,6 +135,7 @@ export default function GraphView({
         meta: e.meta,
       }));
 
+    // Enhanced force simulation for better layout
     const simulation = d3
       .forceSimulation(nodes)
       .force(
@@ -109,12 +143,13 @@ export default function GraphView({
         d3
           .forceLink(links)
           .id((d: any) => d.id)
-          .distance(100)
+          .distance(150) // Increased distance for less clustering
       )
-      .force("charge", d3.forceManyBody().strength(-300))
-      .force("center", d3.forceCenter(width / 2, height / 2));
+      .force("charge", d3.forceManyBody().strength(-500)) // Stronger repulsion
+      .force("center", d3.forceCenter(width / 2, height / 2))
+      .force("collision", d3.forceCollide().radius(20)); // Prevent node overlap
 
-    const link = svg
+    const link = g
       .append("g")
       .attr("stroke", "#999")
       .attr("stroke-opacity", 0.6)
@@ -130,7 +165,7 @@ export default function GraphView({
       });
 
     const node = (
-      svg
+      g
         .append("g")
         .attr("stroke", "#fff")
         .attr("stroke-width", 1.5)
@@ -212,6 +247,25 @@ export default function GraphView({
       node.attr("transform", (d: any) => `translate(${d.x},${d.y})`);
     });
 
+    // Auto-fit to view after simulation settles
+    setTimeout(() => {
+      const bounds = g.node()?.getBBox();
+      if (bounds && bounds.width > 0 && bounds.height > 0) {
+        const scale = Math.min(
+          (width - 100) / bounds.width,
+          (height - 100) / bounds.height,
+          1
+        );
+        const transform = d3.zoomIdentity
+          .translate(
+            width / 2 - (bounds.x + bounds.width / 2) * scale,
+            height / 2 - (bounds.y + bounds.height / 2) * scale
+          )
+          .scale(scale);
+        svg.call(zoom.transform as any, transform);
+      }
+    }, 1500); // Wait longer for complex graphs to settle
+
     function colorForType(type: string, meta?: any) {
       switch (type) {
         case "file":
@@ -250,6 +304,36 @@ export default function GraphView({
     }
   }, [graph, browserFullscreen]);
 
+  const resetZoom = () => {
+    if (svgRef.current) {
+      const svg = d3.select(svgRef.current);
+      svg
+        .transition()
+        .duration(750)
+        .call(d3.zoom().transform as any, d3.zoomIdentity);
+    }
+  };
+
+  const zoomIn = () => {
+    if (svgRef.current) {
+      const svg = d3.select(svgRef.current);
+      svg
+        .transition()
+        .duration(300)
+        .call(d3.zoom().scaleBy as any, 1.3);
+    }
+  };
+
+  const zoomOut = () => {
+    if (svgRef.current) {
+      const svg = d3.select(svgRef.current);
+      svg
+        .transition()
+        .duration(300)
+        .call(d3.zoom().scaleBy as any, 1 / 1.3);
+    }
+  };
+
   return (
     <div
       className={`relative w-full flex justify-center items-center ${
@@ -282,16 +366,52 @@ export default function GraphView({
         {browserFullscreen ? "Exit Fullscreen" : "Fullscreen"}
       </button>
 
-      <svg
-        ref={svgRef}
-        className={`border rounded bg-white/5 shadow ${
-          fullscreen ? "w-full h-[90vh]" : ""
-        } ${browserFullscreen ? "w-full h-full" : ""}`}
-      />
+      {/* Zoom controls */}
+      <div className="absolute top-4 left-4 z-10 flex items-center gap-2 bg-black/20 backdrop-blur-sm rounded-lg p-2">
+        <span className="text-xs text-white/60">
+          Zoom: {Math.round(zoomLevel * 100)}%
+        </span>
+        <button
+          onClick={zoomOut}
+          className="px-2 py-1 text-xs bg-white/10 hover:bg-white/20 rounded border border-white/20"
+          title="Zoom Out"
+        >
+          −
+        </button>
+        <button
+          onClick={resetZoom}
+          className="px-2 py-1 text-xs bg-white/10 hover:bg-white/20 rounded border border-white/20"
+          title="Reset Zoom"
+        >
+          ⌂
+        </button>
+        <button
+          onClick={zoomIn}
+          className="px-2 py-1 text-xs bg-white/10 hover:bg-white/20 rounded border border-white/20"
+          title="Zoom In"
+        >
+          +
+        </button>
+      </div>
 
-      {/* Help text */}
-      <div className="absolute bottom-4 left-4 text-xs text-gray-400 bg-black/50 px-2 py-1 rounded">
-        💡 Click any node to see details
+      {/* Scrollable container */}
+      <div
+        ref={containerRef}
+        className={`relative overflow-auto border rounded bg-white/5 shadow ${
+          fullscreen ? "w-full h-[90vh]" : "w-full h-[600px]"
+        } ${browserFullscreen ? "w-full h-full" : ""}`}
+      >
+        <svg
+          ref={svgRef}
+          className={`block ${fullscreen ? "w-full h-full" : ""} ${
+            browserFullscreen ? "w-full h-full" : ""
+          }`}
+        />
+
+        {/* Navigation hint overlay */}
+        <div className="absolute bottom-4 left-4 text-xs text-white/40 bg-black/20 px-2 py-1 rounded">
+          Drag to pan • Scroll to zoom • Click nodes for details
+        </div>
       </div>
 
       {/* Node Details Modal */}

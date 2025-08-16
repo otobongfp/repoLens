@@ -1,4 +1,5 @@
 import React from "react";
+import { useGraphData } from "../context/GraphDataProvider";
 
 function renderTree(graph: any) {
   // Group nodes by file
@@ -9,7 +10,8 @@ function renderTree(graph: any) {
       (n: any) =>
         (n.type === "function" || n.type === "class") &&
         graph.edges.some(
-          (e) => e.from === file.id && e.to === n.id && e.type === "contains"
+          (e: any) =>
+            e.from === file.id && e.to === n.id && e.type === "contains"
         )
     );
   });
@@ -32,7 +34,9 @@ function renderTree(graph: any) {
   );
 }
 
-export default function TreeView({ graph }: { graph: any }) {
+export default function TreeView() {
+  const { graph } = useGraphData();
+
   if (!graph)
     return (
       <div className="text-center text-lg text-primary py-16">No data</div>

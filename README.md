@@ -1,23 +1,52 @@
 # RepoLens
 
-RepoLens is a full-stack codebase visualization and AI analysis tool. It helps developers understand, navigate, and improve large codebases by providing interactive visualizations, dependency graphs, function flows, and AI-powered code quality insights.
+> **Learn, Build, Improve**
 
-## Features
+RepoLens is an **open-source education and developer improvement platform**. It helps learners, students, and developers **understand codebases, complete coding tasks, get scored on their work, and continuously improve** through AI-powered feedback and visualization tools.
 
-- **Code Graph Visualization**: Explore your codebase as a graph of files, functions, classes, and imports.
-- **Dependency Matrix**: See file-to-file import relationships in a matrix view.
-- **Function Flow**: Visualize function call chains and cross-file interactions.
-- **Heatmap**: Identify code hotspots and complexity visually.
-- **AI Code Analysis**: Get AI-generated code quality scores, vulnerability reports, and refactoring suggestions (powered by OpenAI).
-- **Modern UI**: Built with Next.js, React, and D3.js for a beautiful, interactive experience.
+Whether you're a beginner learning to code, a student completing assignments, or a developer navigating a large codebase, RepoLens provides the tools to **learn, practice, and grow**.
 
-## Architecture
+---
 
-- **Frontend**: Next.js (React, TypeScript, D3.js)
-- **Backend**: FastAPI (Python), for AI analysis
-- **Repolens-agent**: CLI Background agent (Rust), Tree-sitter for code parsing, and file analysis with local API exposed to web (Repo)[https://github.com/otobongfp/repolens-agent]
+## ✨ Features
 
-## Quick Start
+### 🧑‍🏫 Learning & Education
+
+- **Learning Paths** – structured challenges and project-based tasks to guide learners.
+- **Task Management** – create, assign, and track coding exercises or projects.
+- **Automated Scoring** – correctness tests, style checks, and AI-driven evaluations.
+- **Progress Tracking** – dashboards showing improvement, scores, and completion rates.
+- **AI Feedback & Hints** – contextual suggestions, resources, and improvement tips.
+
+### 🔍 Code Understanding
+
+- **Code Graph Visualization** – explore files, functions, classes, and imports as an interactive graph.
+- **Dependency Matrix** – view file-to-file import relationships in a clear matrix view.
+- **Function Flow** – trace function calls across files and modules.
+- **Heatmaps** – visually identify complexity hotspots in the codebase.
+- **AI Code Insights** – detect vulnerabilities, measure quality, and receive refactoring suggestions.
+
+### 👥 Collaboration & Community
+
+- **Assignments for Educators** – instructors can create tasks, auto-grade submissions, and share resources.
+- **Peer & AI Review** – students and developers receive both human and AI feedback.
+- **Open Learning** – learn from public repos and share your progress.
+
+---
+
+## 🏗️ Architecture
+
+RepoLens is a hybrid stack designed for extensibility:
+
+- **Frontend** – Next.js (React, TypeScript, D3.js) for interactive UI.
+- **Backend** – FastAPI (Python) for API and orchestration.
+- **Local Agent** – Rust (Axum) for secure, high-performance repo parsing and analysis.
+- **AI Layer** – OpenAI (or other LLMs) for feedback, scoring, and suggestions.
+- **Database** – PostgreSQL for user data, progress tracking, and reports.
+
+---
+
+## 🚀 Quick Start
 
 ### 1. Clone the repository
 
@@ -28,45 +57,64 @@ cd repolens
 
 ### 2. Install dependencies
 
-- **Backend**:
-  ```bash
-  cd backend
-  python -m venv .venv
-  source .venv/bin/activate
-  pip install -r requirements.txt
-  ```
-- **Frontend**:
-  ```bash
-  cd ../frontend
-  npm install
-  ```
+**Backend:**
+
+```bash
+cd backend
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+**Frontend:**
+
+```bash
+cd ../frontend
+npm install
+```
 
 ### 3. Configure environment variables
 
-- Copy `.env.example` to `.env` in the backend directory and set your OpenAI API key if you want AI features.
+Copy `.env.example` → `.env` in `backend` and set your variables (e.g., API keys).
 
 ### 4. Start the servers
 
-- **Backend**:
-  ```bash
-  cd backend
-  uvicorn app.main:app --reload
-  ```
-- **Frontend**:
-  ```bash
-  cd frontend
-  npm run dev
-  ```
+**Backend:**
 
-### 5. Open the app
+```bash
+cd backend
+uvicorn app.main:app --reload
+```
 
-Go to [http://localhost:3000](http://localhost:3000) in your browser.
+**Frontend:**
 
-## Documentation
+```bash
+cd frontend
+npm run dev
+```
 
-- [Development Guide](backend/DEVELOPMENT.md): How to contribute, backend setup, grammar building, and more.
-- [AI Setup](backend/AI_SETUP.md): How to enable and configure AI analysis.
+Then open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## License
+---
 
-MIT
+## 📚 Documentation
+
+- [Development Guide](backend/DEVELOPMENT.md) – backend setup, grammar building, contributing.
+- [AI Setup](backend/AI_SETUP.md) – enable and configure AI features.
+- [Education Module](docs/LEARNING.md) – manage tasks, scoring, and progress.
+
+---
+
+## 🛣️ Roadmap
+
+- ✅ Repo visualization & AI code analysis
+- 🚧 Automated scoring engine (tests + AI evaluation)
+- 🔜 Learning paths & task management
+- 🔜 Student dashboards & progress reports
+- 🌍 Open community of learners, educators, and contributors
+
+---
+
+## 📄 License
+
+Apache License 2.0

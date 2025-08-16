@@ -1,4 +1,5 @@
 import "../../styles/globals.css";
+import { ApiProvider } from "./context/ApiProvider";
 
 export const metadata = {
   title: "Next.js",
@@ -12,7 +13,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body suppressHydrationWarning={true}>
+        <ApiProvider>{children}</ApiProvider>
+      </body>
     </html>
   );
 }

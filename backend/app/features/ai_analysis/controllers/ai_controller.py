@@ -38,7 +38,7 @@ async def analyze_codebase(request: AIAnalysisRequest) -> Dict[str, Any]:
             )
         
         logger.info("Starting AI codebase analysis")
-        result = ai_analyzer.analyze_codebase(request.graph_data)
+        result = ai_analyzer.analyze_codebase(request)
         logger.info("AI codebase analysis completed")
         return result
     except Exception as e:

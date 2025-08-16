@@ -3,13 +3,19 @@ import re
 from typing import Dict, List, Any, Optional
 from openai import OpenAI
 from app.core.config import config
+import os
 
 logger = logging.getLogger(__name__)
+
+print("DEBUG: OPENAI_API_KEY at service init:", os.getenv("OPENAI_API_KEY"))
+print("DEBUG: AI_ANALYSIS_ENABLED at service init:", os.getenv("AI_ANALYSIS_ENABLED"))
 
 class AIAnalyzerService:
     """Service for AI-powered code analysis."""
     
     def __init__(self):
+        print("DEBUG: config.OPENAI_API_KEY:", config.OPENAI_API_KEY)
+        print("DEBUG: config.AI_ANALYSIS_ENABLED:", config.AI_ANALYSIS_ENABLED)
         # Simple cache for analysis results
         self._analysis_cache = {}
         if not config.OPENAI_API_KEY:
@@ -20,6 +26,7 @@ class AIAnalyzerService:
             try:
                 # Try different initialization methods for compatibility
                 try:
+                    print(config.OPENAI_API_KEY)
                     self.client = OpenAI(api_key=config.OPENAI_API_KEY)
                 except TypeError as e:
                     if "proxies" in str(e):
@@ -43,20 +50,21 @@ class AIAnalyzerService:
             # Extract key information from graph
             nodes = graph_data.get("nodes", [])
             edges = graph_data.get("edges", [])
-            
+            technology_stack = graph_data.get("technology_stack", {})
+            documentation = graph_data.get("documentation", [])
+            configurations = graph_data.get("configurations", [])
+            summary = graph_data.get("summary", None)
             # Create a simple cache key based on graph structure
-            cache_key = f"{len(nodes)}_{len(edges)}_{hash(str(sorted([n.get('id', '') for n in nodes[:10]])))}"
-            
+            cache_key = f"{len(nodes)}_{len(edges)}_{hash(str(sorted([n.get('id', '') for n in nodes[:10]])))}_{hash(str(technology_stack))}_{hash(str(documentation))}_{hash(str(configurations))}_{hash(str(summary))}"
             # Check cache first
             if cache_key in self._analysis_cache:
                 logger.info("Returning cached analysis result")
                 return self._analysis_cache[cache_key]
-            
             # Create a single comprehensive analysis prompt
-            combined_prompt = self._create_combined_analysis_prompt(nodes, edges)
-            
+            combined_prompt = self._create_combined_analysis_prompt(
+                nodes, edges, technology_stack, documentation, configurations, summary
+            )
             logger.info("Starting comprehensive AI analysis...")
-            
             # Single API call for all analyses
             try:
                 response = self.client.chat.completions.create(
@@ -65,11 +73,9 @@ class AIAnalyzerService:
                     max_tokens=config.AI_MAX_TOKENS,
                     temperature=config.AI_TEMPERATURE
                 )
-                
                 # Parse the combined response
                 analysis_text = response.choices[0].message.content
                 results = self._parse_combined_analysis(analysis_text)
-                
             except Exception as e:
                 if "rate_limit_exceeded" in str(e) or "Request too large" in str(e):
                     logger.warning("Token limit exceeded, using fallback analysis")
@@ -77,24 +83,18 @@ class AIAnalyzerService:
                     results = self._create_fallback_analysis(nodes, edges)
                 else:
                     raise e
-            
             # Calculate overall scores
             scores = self._calculate_scores(results, nodes, edges)
-            
             logger.info("AI analysis completed successfully")
-            
             result = {
                 "enabled": True,
                 "scores": scores,
                 "analysis": results,
                 "summary": self._generate_summary(scores, results)
             }
-            
             # Cache the result
             self._analysis_cache[cache_key] = result
-            
             return result
-            
         except Exception as e:
             logger.error(f"AI analysis failed: {e}")
             return self._get_error_response(str(e))
@@ -569,101 +569,102 @@ Recommendation: Implement code quality tools and review best practices."""
         """
         return ("quality", prompt)
     
-    def _create_combined_analysis_prompt(self, nodes: List[Dict], edges: List[Dict]) -> str:
-        """Create a single comprehensive analysis prompt for all categories."""
+    def _create_combined_analysis_prompt(self, nodes: List[Dict], edges: List[Dict], technology_stack: Any, documentation: List[Any], configurations: List[Any], summary: Any) -> str:
+        """Create a single comprehensive analysis prompt for all categories, using enhanced agent data."""
         files = [n for n in nodes if n.get("type") == "file"]
         functions = [n for n in nodes if n.get("type") == "function"]
         classes = [n for n in nodes if n.get("type") == "class"]
         imports = [n for n in nodes if n.get("type") == "import"]
-        
         node_types = self._count_node_types(nodes)
-        
-        # Limit the data to reduce tokens
-        file_names = [f.get('label', 'Unknown') for f in files[:5]]  # Reduced from 10
-        function_names = [f.get('label', 'Unknown') for f in functions[:10]]  # Reduced from 20
-        import_names = [i.get('label', 'Unknown') for i in imports[:5]]  # Reduced from 10
-        
-        # Extract sample code content for analysis
+        file_names = [f.get('label', 'Unknown') for f in files[:5]]
+        function_names = [f.get('label', 'Unknown') for f in functions[:10]]
+        import_names = [i.get('label', 'Unknown') for i in imports[:5]]
         sample_classes = []
         sample_functions = []
-        
         for node in nodes:
             if node.get('type') in ['class', 'interface', 'type'] and len(sample_classes) < 3:
                 class_name = node.get('label', 'Unknown')
                 class_type = node.get('type', 'class')
-                class_code = node.get('meta', {}).get('code', '')[:300]  # First 300 chars
+                class_code = node.get('meta', {}).get('code', '')[:300]
                 sample_classes.append(f"{class_type} {class_name}: {class_code}")
             elif node.get('type') == 'function' and len(sample_functions) < 3:
                 func_name = node.get('label', 'Unknown')
-                func_code = node.get('meta', {}).get('code', '')[:300]  # First 300 chars
+                func_code = node.get('meta', {}).get('code', '')[:300]
                 sample_functions.append(f"{func_name}: {func_code}")
-        
+        # Enhanced: Add technology stack, documentation, configurations, summary
+        tech_stack_str = str(technology_stack) if technology_stack else "None"
+        documentation_str = "\n".join([f"- {doc.get('label', '')}: {doc.get('meta', {}).get('summary', '')}" for doc in documentation]) if documentation else "None"
+        configurations_str = "\n".join([f"- {cfg.get('label', '')}: {cfg.get('meta', {}).get('summary', '')}" for cfg in configurations]) if configurations else "None"
+        summary_str = summary if summary else "None"
         prompt = f"""
-        You are an expert code analyst. Analyze this codebase comprehensively and provide insights in all key areas.
-        
-        Codebase Overview:
-        - Files: {len(files)}
-        - Functions: {len(functions)}
-        - Classes/Interfaces/Types: {len(classes)}
-        - Imports: {len(imports)}
-        - Total connections: {len(edges)}
-        - Node types: {node_types}
-        
-        Sample files: {file_names}
-        Sample functions: {function_names}
-        Sample imports: {import_names}
-        
-        Sample class/interface/type implementations:
-        {sample_classes}
-        
-        Sample function implementations:
-        {sample_functions}
-        
-        Please provide a comprehensive analysis covering all these areas in a single JSON response:
-        
-        {{
-            "complexity": {{
-                "score": 1-10,
-                "analysis": "Detailed complexity assessment including cyclomatic complexity, cognitive load, and refactoring opportunities",
-                "hotspots": ["list of complex areas"],
-                "recommendations": ["refactoring suggestions"]
-            }},
-            "security": {{
-                "score": 1-10,
-                "analysis": "Security assessment including vulnerabilities, dependencies, authentication, and data handling",
-                "vulnerabilities": ["potential security issues"],
-                "recommendations": ["security improvements"]
-            }},
-            "maintainability": {{
-                "score": 1-10,
-                "analysis": "Maintainability assessment including code organization, documentation, testing, and technical debt",
-                "strengths": ["maintainability strengths"],
-                "improvements": ["maintainability improvements"]
-            }},
-            "architecture": {{
-                "score": 1-10,
-                "analysis": "Architecture assessment including design patterns, coupling, cohesion, and scalability",
-                "patterns": ["identified design patterns"],
-                "recommendations": ["architectural improvements"]
-            }},
-            "quality": {{
-                "score": 1-10,
-                "analysis": "Overall code quality including best practices, readability, and performance",
-                "strengths": ["quality strengths"],
-                "issues": ["quality issues and anti-patterns"]
-            }}
-        }}
-        
-        IMPORTANT SCORING GUIDELINES:
-        - 10/10: Exceptional, industry-leading code (rare)
-        - 8-9/10: Very good, well-structured code
-        - 6-7/10: Good code with some areas for improvement
-        - 4-5/10: Average code with notable issues
-        - 1-3/10: Poor code with significant problems
-        
-        Be realistic and critical in your assessment. Most codebases score 5-7/10.
-        Focus on actionable insights and specific recommendations.
-        """
+You are an expert code analyst. Analyze this codebase comprehensively and provide insights in all key areas.
+
+Codebase Overview:
+- Files: {len(files)}
+- Functions: {len(functions)}
+- Classes/Interfaces/Types: {len(classes)}
+- Imports: {len(imports)}
+- Total connections: {len(edges)}
+- Node types: {node_types}
+- Technology Stack: {tech_stack_str}
+- Documentation: {documentation_str}
+- Configurations: {configurations_str}
+- Agent Summary: {summary_str}
+
+Sample files: {file_names}
+Sample functions: {function_names}
+Sample imports: {import_names}
+
+Sample class/interface/type implementations:
+{sample_classes}
+
+Sample function implementations:
+{sample_functions}
+
+Please provide a comprehensive analysis covering all these areas in a single JSON response:
+{{
+    "complexity": {{
+        "score": 1-10,
+        "analysis": "Detailed complexity assessment including cyclomatic complexity, cognitive load, and refactoring opportunities",
+        "hotspots": ["list of complex areas"],
+        "recommendations": ["refactoring suggestions"]
+    }},
+    "security": {{
+        "score": 1-10,
+        "analysis": "Security assessment including vulnerabilities, dependencies, authentication, and data handling",
+        "vulnerabilities": ["potential security issues"],
+        "recommendations": ["security improvements"]
+    }},
+    "maintainability": {{
+        "score": 1-10,
+        "analysis": "Maintainability assessment including code organization, documentation, testing, and technical debt",
+        "strengths": ["maintainability strengths"],
+        "improvements": ["maintainability improvements"]
+    }},
+    "architecture": {{
+        "score": 1-10,
+        "analysis": "Architecture assessment including design patterns, coupling, cohesion, and scalability",
+        "patterns": ["identified design patterns"],
+        "recommendations": ["architectural improvements"]
+    }},
+    "quality": {{
+        "score": 1-10,
+        "analysis": "Overall code quality including best practices, readability, and performance",
+        "strengths": ["quality strengths"],
+        "issues": ["quality issues and anti-patterns"]
+    }}
+}}
+
+IMPORTANT SCORING GUIDELINES:
+- 10/10: Exceptional, industry-leading code (rare)
+- 8-9/10: Very good, well-structured code
+- 6-7/10: Good code with some areas for improvement
+- 4-5/10: Average code with notable issues
+- 1-3/10: Poor code with significant problems
+
+Be realistic and critical in your assessment. Most codebases score 5-7/10.
+Focus on actionable insights and specific recommendations.
+"""
         return prompt
     
     def _parse_combined_analysis(self, analysis_text: str) -> Dict[str, str]:

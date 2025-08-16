@@ -2,18 +2,20 @@ import { useState } from "react";
 import GraphView from "./GraphView";
 import TreeView from "./TreeView";
 import DependencyMatrixView from "./DependencyMatrixView";
-import FunctionFlowView from "./FunctionFlowView";
+import ProjectFlowView from "./ProjectFlowView";
 import HeatmapView from "./HeatmapView";
+import { useGraphData } from "../context/GraphDataProvider";
 
 const TABS = [
   { key: "graph", label: "Graph View" },
   { key: "tree", label: "Tree View" },
   { key: "matrix", label: "Dependency Matrix" },
-  { key: "flow", label: "Function Flow" },
+  { key: "project", label: "Project Flow" },
   { key: "heatmap", label: "Heatmap" },
 ];
 
-export default function VisualizationTabs({ graph }: { graph: any }) {
+export default function VisualizationTabs() {
+  const { graph } = useGraphData();
   const [active, setActive] = useState("graph");
 
   return (
@@ -37,11 +39,11 @@ export default function VisualizationTabs({ graph }: { graph: any }) {
         ))}
       </div>
       <div className="transition-opacity duration-300">
-        {active === "graph" && <GraphView graph={graph} />}
-        {active === "tree" && <TreeView graph={graph} />}
-        {active === "matrix" && <DependencyMatrixView graph={graph} />}
-        {active === "flow" && <FunctionFlowView graph={graph} />}
-        {active === "heatmap" && <HeatmapView graph={graph} />}
+        {active === "graph" && <GraphView />}
+        {active === "tree" && <TreeView />}
+        {active === "matrix" && <DependencyMatrixView />}
+        {active === "project" && <ProjectFlowView />}
+        {active === "heatmap" && <HeatmapView />}
       </div>
     </div>
   );
