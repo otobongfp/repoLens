@@ -1,10 +1,7 @@
 # RepoLens – Info, Milestones & Vision
 
-RepoLens exists to help humans **get better, faster, in the age of AI**.  
-It’s a self-paced, AI-powered learning platform — not the usual instructor-led flow.  
+RepoLens exists to help builders **learn better, faster, in the age of AI**.
 By turning **repos into textbooks** and **AI into a mentor**, RepoLens creates an environment where learning is hands-on, adaptive, and future-ready.
-
-Think of it as _“GitHub meets Khan Academy”_ — where **open-source projects become living classrooms**.
 
 ---
 
