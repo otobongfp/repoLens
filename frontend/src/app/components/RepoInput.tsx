@@ -3,7 +3,11 @@ import { useRepolensApi } from "../utils/api";
 import { useGraphData } from "../context/GraphDataProvider";
 import FolderSelector from "./FolderSelector";
 
-export default function RepoInput() {
+interface RepoInputProps {
+  onAnalyze?: (folderPath: string) => Promise<void>;
+}
+
+export default function RepoInput({ onAnalyze }: RepoInputProps = {}) {
   const [selectedFolder, setSelectedFolder] = useState("");
   const [usingCache, setUsingCache] = useState(false);
   const { isLocal, analyzeRepo } = useRepolensApi();
@@ -55,23 +59,29 @@ export default function RepoInput() {
           <div className="flex gap-2">
             <button
               onClick={async () => {
-                setIsLoading(true);
-                setError("");
-                setGraph(null);
-                setUsingCache(false);
-                try {
-                  const result = await analyzeRepo("", selectedFolder);
-                  setGraph(result.data);
-                  setUsingCache(result.fromCache);
-                } catch (err) {
-                  setError("Failed to analyze folder.");
-                } finally {
-                  setIsLoading(false);
+                if (onAnalyze) {
+                  await onAnalyze(selectedFolder);
+                } else {
+                  setIsLoading(true);
+                  setError("");
+                  setGraph(null);
+                  setUsingCache(false);
+                  try {
+                    const result = await analyzeRepo("", selectedFolder);
+                    setGraph(result.data);
+                    setUsingCache(result.fromCache);
+                  } catch (err) {
+                    setError("Failed to analyze folder.");
+                  } finally {
+                    setIsLoading(false);
+                  }
                 }
               }}
               className="px-6 py-3 bg-primary text-white rounded-lg shadow-lg hover:bg-primary/80 transition text-lg font-semibold"
             >
-              Analyze Selected Folder
+              {onAnalyze
+                ? "Start Enhanced Analysis"
+                : "Analyze Selected Folder"}
             </button>
             {usingCache && (
               <button

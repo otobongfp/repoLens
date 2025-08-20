@@ -15,7 +15,7 @@ function AppContent() {
   const { graph, isLoading, error } = useGraphData();
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-[#1a1f2b] flex flex-col">
       <Navbar>
         <button
           className="md:hidden p-2 text-primary focus:outline-none"

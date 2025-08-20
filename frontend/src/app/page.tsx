@@ -15,7 +15,7 @@ export default function Home() {
       <main className="flex-1 flex flex-col items-center justify-center px-4">
         <Hero />
         <div className="flex justify-center mt-8">
-          <Link href="/app">
+          <Link href="/dashboard/select">
             <button className="px-8 py-3 bg-primary text-white rounded-lg shadow-lg hover:bg-primary/80 transition text-lg font-semibold">
               Get Started
             </button>

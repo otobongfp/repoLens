@@ -16,7 +16,7 @@ export const ApiProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLocal, setIsLocal] = useState(false);
 
   useEffect(() => {
-    // Always try to connect to local agent
+    //try to connect to local agent
     fetch("http://localhost:3090/status")
       .then((res) => {
         if (res.ok) {

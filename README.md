@@ -2,21 +2,13 @@
 
 > **Learn, Build, Improve**
 
-RepoLens is an **open-source education and developer improvement platform**. It helps learners, students, and developers **understand codebases, complete coding tasks, get scored on their work, and continuously improve** through AI-powered feedback and visualization tools.
+RepoLens is an **open-source education and developer improvement platform**. It helps learners and developers **understand codebases, complete coding tasks, get scored on their work, and continuously improve** through AI-powered feedback and visualization tools.
 
 Whether you're a beginner learning to code, a student completing assignments, or a developer navigating a large codebase, RepoLens provides the tools to **learn, practice, and grow**.
 
 ---
 
 ## Features
-
-### Learning & Education
-
-- **Learning Paths** – structured challenges and project-based tasks to guide learners.
-- **Task Management** – create, assign, and track coding exercises or projects.
-- **Automated Scoring** – correctness tests, style checks, and AI-driven evaluations.
-- **Progress Tracking** – dashboards showing improvement, scores, and completion rates.
-- **AI Feedback & Hints** – contextual suggestions, resources, and improvement tips.
 
 ### Code Understanding
 
@@ -26,9 +18,17 @@ Whether you're a beginner learning to code, a student completing assignments, or
 - **Heatmaps** – visually identify complexity hotspots in the codebase.
 - **AI Code Insights** – detect vulnerabilities, measure quality, and receive refactoring suggestions.
 
+### Learning & Education
+
+- **Knowledge Graphs** - Convert a repo, a piece of code into a knowledge graph
+- **Learning Paths** – structured challenges and project-based tasks to guide learners.
+- **Task Management** – create, assign, and track coding exercises or projects.
+- **Automated Scoring** – correctness tests, style checks, and AI-driven evaluations.
+- **Progress Tracking** – dashboards showing improvement, scores, and completion rates.
+- **AI Feedback & Hints** – contextual suggestions, resources, and improvement tips.
+
 ### Collaboration & Community
 
-- **Assignments for Educators** – instructors can create tasks, auto-grade submissions, and share resources.
 - **Peer & AI Review** – students and developers receive both human and AI feedback.
 - **Open Learning** – learn from public repos and share your progress.
 
@@ -107,11 +107,11 @@ Then open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## Roadmap
 
-- ✅ Repo visualization & AI code analysis
-- 🚧 Automated scoring engine (tests + AI evaluation)
-- 🔜 Learning paths & task management
-- 🔜 Student dashboards & progress reports
-- 🌍 Open community of learners, educators, and contributors
+- Repo visualization & AI code analysis
+- Automated scoring engine (tests + AI evaluation)
+- Learning paths & task management
+- Student dashboards & progress reports
+- Open community of learners, educators, and contributors
 
 ---
 
