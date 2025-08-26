@@ -348,21 +348,21 @@ export default function ProjectFlowView() {
           </span>
           <button
             onClick={zoomOut}
-            className="px-2 py-1 text-xs bg-white/10 hover:bg-white/20 rounded border border-white/20"
+            className="px-2 py-1 text-xs bg-white/10 hover:bg-white/20 rounded-sm border border-white/20"
             title="Zoom Out"
           >
             −
           </button>
           <button
             onClick={resetZoom}
-            className="px-2 py-1 text-xs bg-white/10 hover:bg-white/20 rounded border border-white/20"
+            className="px-2 py-1 text-xs bg-white/10 hover:bg-white/20 rounded-sm border border-white/20"
             title="Reset Zoom"
           >
             ⌂
           </button>
           <button
             onClick={zoomIn}
-            className="px-2 py-1 text-xs bg-white/10 hover:bg-white/20 rounded border border-white/20"
+            className="px-2 py-1 text-xs bg-white/10 hover:bg-white/20 rounded-sm border border-white/20"
             title="Zoom In"
           >
             +
@@ -372,7 +372,7 @@ export default function ProjectFlowView() {
 
       {/* Selected module details */}
       {selectedModule && (
-        <div className="mb-4 p-4 bg-white/5 rounded border border-white/10">
+        <div className="mb-4 p-4 bg-white/5 rounded-sm border border-white/10">
           <div className="flex items-center gap-2 mb-3">
             <span className="text-primary font-bold">📦</span>
             <span className="font-semibold text-primary">
@@ -415,7 +415,7 @@ export default function ProjectFlowView() {
               {selectedModule.functions.map((func: any) => (
                 <div
                   key={func.id}
-                  className="text-sm text-white/70 bg-white/5 px-2 py-1 rounded"
+                  className="text-sm text-white/70 bg-white/5 px-2 py-1 rounded-sm"
                 >
                   {func.label}
                 </div>
@@ -431,7 +431,7 @@ export default function ProjectFlowView() {
                 {selectedModule.connections.map((conn, idx) => (
                   <div
                     key={idx}
-                    className="text-sm text-white/70 bg-white/5 px-2 py-1 rounded"
+                    className="text-sm text-white/70 bg-white/5 px-2 py-1 rounded-sm"
                   >
                     → {conn.to} ({conn.type})
                   </div>
@@ -452,7 +452,7 @@ export default function ProjectFlowView() {
       {/* Scrollable container */}
       <div
         ref={containerRef}
-        className="relative overflow-auto border border-white/10 rounded bg-background"
+        className="relative overflow-auto border border-white/10 rounded-sm bg-background"
         style={{ height: "600px" }}
       >
         <svg
@@ -462,7 +462,7 @@ export default function ProjectFlowView() {
         />
 
         {/* Scroll hint overlay */}
-        <div className="absolute top-2 right-2 text-xs text-white/40 bg-black/20 px-2 py-1 rounded">
+        <div className="absolute top-2 right-2 text-xs text-white/40 bg-black/20 px-2 py-1 rounded-sm">
           Drag to pan • Scroll to zoom
         </div>
       </div>

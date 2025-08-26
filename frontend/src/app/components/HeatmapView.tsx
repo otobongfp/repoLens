@@ -230,7 +230,7 @@ export default function HeatmapView() {
 
       {/* Selected node info */}
       {selectedNode && (
-        <div className="mb-4 p-3 bg-white/5 rounded border border-white/10">
+        <div className="mb-4 p-3 bg-white/5 rounded-sm border border-white/10">
           <div className="flex items-center gap-2 mb-2">
             <span className="text-primary font-bold">📊</span>
             <span className="font-semibold text-primary">
@@ -292,7 +292,7 @@ export default function HeatmapView() {
           ref={svgRef}
           width="800"
           height="600"
-          className="bg-background border border-white/10 rounded"
+          className="bg-background border border-white/10 rounded-sm"
         />
       </div>
       <div className="mt-4 text-xs text-white/50">

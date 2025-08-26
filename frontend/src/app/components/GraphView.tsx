@@ -367,27 +367,27 @@ export default function GraphView({
       </button>
 
       {/* Zoom controls */}
-      <div className="absolute top-4 left-4 z-10 flex items-center gap-2 bg-black/20 backdrop-blur-sm rounded-lg p-2">
+      <div className="absolute top-4 left-4 z-10 flex items-center gap-2 bg-black/20 backdrop-blur-xs rounded-lg p-2">
         <span className="text-xs text-white/60">
           Zoom: {Math.round(zoomLevel * 100)}%
         </span>
         <button
           onClick={zoomOut}
-          className="px-2 py-1 text-xs bg-white/10 hover:bg-white/20 rounded border border-white/20"
+          className="px-2 py-1 text-xs bg-white/10 hover:bg-white/20 rounded-sm border border-white/20"
           title="Zoom Out"
         >
           −
         </button>
         <button
           onClick={resetZoom}
-          className="px-2 py-1 text-xs bg-white/10 hover:bg-white/20 rounded border border-white/20"
+          className="px-2 py-1 text-xs bg-white/10 hover:bg-white/20 rounded-sm border border-white/20"
           title="Reset Zoom"
         >
           ⌂
         </button>
         <button
           onClick={zoomIn}
-          className="px-2 py-1 text-xs bg-white/10 hover:bg-white/20 rounded border border-white/20"
+          className="px-2 py-1 text-xs bg-white/10 hover:bg-white/20 rounded-sm border border-white/20"
           title="Zoom In"
         >
           +
@@ -409,7 +409,7 @@ export default function GraphView({
         />
 
         {/* Navigation hint overlay */}
-        <div className="absolute bottom-4 left-4 text-xs text-white/40 bg-black/20 px-2 py-1 rounded">
+        <div className="absolute bottom-4 left-4 text-xs text-white/40 bg-black/20 px-2 py-1 rounded-sm">
           Drag to pan • Scroll to zoom • Click nodes for details
         </div>
       </div>

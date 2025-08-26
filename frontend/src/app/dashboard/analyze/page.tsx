@@ -12,7 +12,7 @@ export default function AnalyzeDashboard() {
   }, [router]);
 
   return (
-    <div className="min-h-screen bg-[#1a1f2b] flex items-center justify-center">
+    <div className="min-h-screen bg-sidebar flex items-center justify-center">
       <div className="text-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
         <p className="text-white">Redirecting to analysis dashboard...</p>

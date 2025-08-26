@@ -54,7 +54,7 @@ export default function Sidebar() {
       </p>
       <form onSubmit={handleAsk} className="flex flex-col gap-2 mb-4">
         <textarea
-          className="border border-white/10 bg-background text-black rounded p-2 resize-none h-20 focus:outline-none focus:ring-2 focus:ring-primary"
+          className="border border-white/10 bg-background text-black rounded-sm p-2 resize-none h-20 focus:outline-hidden focus:ring-2 focus:ring-primary"
           placeholder={
             !graph || !graph.nodes
               ? "Please analyze a repository first..."
@@ -66,7 +66,7 @@ export default function Sidebar() {
         />
         <button
           type="submit"
-          className="bg-primary text-white rounded px-4 py-2 hover:bg-primary/80 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+          className="bg-primary text-white rounded-sm px-4 py-2 hover:bg-primary/80 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
           disabled={loading || !graph || !graph.nodes}
         >
           {loading ? "Asking..." : "Ask"}
@@ -79,7 +79,7 @@ export default function Sidebar() {
           {history.map((item, i) => (
             <li
               key={i}
-              className="bg-background/80 rounded p-2 shadow text-sm border border-white/5"
+              className="bg-background/80 rounded-sm p-2 shadow-sm text-sm border border-white/5"
             >
               <div className="font-medium text-primary">Q: {item.q}</div>
               <div className="text-white/80">A: {item.a}</div>

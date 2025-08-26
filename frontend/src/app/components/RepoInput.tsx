@@ -25,7 +25,7 @@ export default function RepoInput({ onAnalyze }: RepoInputProps = {}) {
   if (!isLocal) {
     return (
       <div className="w-full max-w-xl mb-6">
-        <div className="p-4 bg-red-50 border border-red-200 rounded shadow text-center">
+        <div className="p-4 bg-red-50 border border-red-200 rounded-sm shadow-sm text-center">
           <p className="text-red-600 font-semibold">
             RepoLens Agent Not Connected
           </p>
@@ -40,7 +40,7 @@ export default function RepoInput({ onAnalyze }: RepoInputProps = {}) {
 
   return (
     <div className="w-full max-w-xl mb-6">
-      <div className="p-4 bg-white/70 rounded shadow text-center mb-4">
+      <div className="p-4 bg-white/70 rounded-sm shadow-sm text-center mb-4">
         <p className="text-primary font-semibold">
           Connected to local RepoLens Agent
         </p>

@@ -24,7 +24,7 @@ export default function VisualizationTabs() {
         {TABS.map((tab) => (
           <button
             key={tab.key}
-            className={`px-4 py-2 font-semibold rounded-t transition focus:outline-none
+            className={`px-4 py-2 font-semibold rounded-t transition focus:outline-hidden
               ${
                 active === tab.key
                   ? "border-b-4 border-primary text-primary bg-white/5"

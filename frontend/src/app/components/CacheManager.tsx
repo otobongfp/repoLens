@@ -50,7 +50,7 @@ export default function CacheManager() {
   }, []);
 
   return (
-    <div className="fixed bottom-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg shadow-lg border border-gray-200 p-4 max-w-sm">
+    <div className="fixed bottom-4 right-4 bg-white/90 backdrop-blur-xs rounded-lg shadow-lg border border-gray-200 p-4 max-w-sm">
       <h3 className="font-semibold text-gray-800 mb-2">Cache Manager</h3>
 
       {stats && (
@@ -63,14 +63,14 @@ export default function CacheManager() {
       <div className="flex gap-2">
         <button
           onClick={loadStats}
-          className="px-3 py-1 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition"
+          className="px-3 py-1 text-xs bg-gray-200 text-gray-700 rounded-sm hover:bg-gray-300 transition"
         >
           Refresh
         </button>
         <button
           onClick={handleClearCache}
           disabled={loading}
-          className="px-3 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600 transition disabled:opacity-50"
+          className="px-3 py-1 text-xs bg-red-500 text-white rounded-sm hover:bg-red-600 transition disabled:opacity-50"
         >
           {loading ? "Clearing..." : "Clear Cache"}
         </button>

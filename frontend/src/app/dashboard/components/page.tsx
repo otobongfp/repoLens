@@ -6,10 +6,10 @@ import { PuzzleIcon } from "../../components/LucideIcons";
 
 export default function ComponentsDashboard() {
   return (
-    <div className="min-h-screen bg-[#1a1f2b] flex flex-col">
+    <div className="min-h-screen bg-sidebar flex flex-col">
       {/* Background Effects */}
       <div className="absolute inset-0 -z-10 pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[400px] h-[400px] bg-[#1db470] opacity-20 rounded-full filter blur-3xl" />
+        <div className="absolute top-[-10%] left-[-10%] w-[400px] h-[400px] bg-primary opacity-20 rounded-full filter blur-3xl" />
         <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-blue-400 opacity-15 rounded-full filter blur-2xl" />
         <div className="absolute top-[30%] left-[60%] w-[300px] h-[300px] bg-pink-300 opacity-15 rounded-full filter blur-2xl" />
       </div>

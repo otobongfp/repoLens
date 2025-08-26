@@ -141,7 +141,7 @@ export default function AIAnalysisView() {
             <h3 className="text-lg font-semibold text-white mb-3 capitalize">
               {category} Analysis
             </h3>
-            <div className="bg-gray-900/50 rounded p-4">
+            <div className="bg-gray-900/50 rounded-sm p-4">
               <pre className="text-sm text-gray-300 whitespace-pre-wrap font-mono">
                 {content}
               </pre>
@@ -164,7 +164,7 @@ export default function AIAnalysisView() {
           <h3 className="text-lg font-semibold text-white mb-3">
             Security Analysis
           </h3>
-          <div className="bg-gray-900/50 rounded p-4">
+          <div className="bg-gray-900/50 rounded-sm p-4">
             <pre className="text-sm text-gray-300 whitespace-pre-wrap font-mono">
               {securityContent}
             </pre>
@@ -248,7 +248,7 @@ export default function AIAnalysisView() {
           <p className="text-red-200 text-sm mb-4">{error}</p>
           <button
             onClick={analyzeCodebase}
-            className="bg-primary text-white px-4 py-2 rounded hover:bg-primary/80 transition"
+            className="bg-primary text-white px-4 py-2 rounded-sm hover:bg-primary/80 transition"
           >
             Retry Analysis
           </button>
@@ -289,7 +289,7 @@ export default function AIAnalysisView() {
         <h2 className="text-xl font-bold text-primary">AI Code Analysis</h2>
         <button
           onClick={analyzeCodebase}
-          className="bg-primary text-white px-4 py-2 rounded hover:bg-primary/80 transition"
+          className="bg-primary text-white px-4 py-2 rounded-sm hover:bg-primary/80 transition"
         >
           Refresh Analysis
         </button>
@@ -305,7 +305,7 @@ export default function AIAnalysisView() {
         ].map((tab) => (
           <button
             key={tab.key}
-            className={`px-4 py-2 font-semibold rounded-t transition focus:outline-none
+            className={`px-4 py-2 font-semibold rounded-t transition focus:outline-hidden
               ${
                 activeTab === tab.key
                   ? "border-b-4 border-primary text-primary bg-white/5"

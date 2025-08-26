@@ -28,7 +28,7 @@ export default function FolderSelector({
   };
 
   return (
-    <div className="w-full max-w-xl mb-6 p-4 bg-white/70 rounded shadow">
+    <div className="w-full max-w-xl mb-6 p-4 bg-white/70 rounded-sm shadow-sm">
       <h3 className="text-lg font-semibold text-gray-800 mb-3">
         Select Folder to Analyze
       </h3>
@@ -47,7 +47,7 @@ export default function FolderSelector({
             value={folderPath}
             onChange={handleFolderChange}
             placeholder="Enter folder path (e.g., /Users/username/projects/my-project)"
-            className="w-full px-3 py-2 border border-gray-300 text-gray-800 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+            className="w-full px-3 py-2 border border-gray-300 text-gray-800 rounded-md focus:outline-hidden focus:ring-2 focus:ring-primary focus:border-transparent"
           />
         </div>
 
@@ -62,7 +62,7 @@ export default function FolderSelector({
       </form>
 
       {selectedFolder && (
-        <div className="mt-3 p-2 bg-blue-50 border border-blue-200 rounded">
+        <div className="mt-3 p-2 bg-blue-50 border border-blue-200 rounded-sm">
           <p className="text-sm text-blue-800">
             <strong>Selected:</strong> {selectedFolder}
           </p>

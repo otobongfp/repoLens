@@ -14,7 +14,7 @@ export default function MainTabs() {
       {/* Main Mode Tabs */}
       <div className="flex gap-2 mb-6 border-b border-white/10">
         <button
-          className={`px-6 py-3 font-semibold rounded-t transition focus:outline-none
+          className={`px-6 py-3 font-semibold rounded-t transition focus:outline-hidden
             ${
               activeMode === "visualization"
                 ? "border-b-4 border-primary text-primary bg-white/5"
@@ -25,7 +25,7 @@ export default function MainTabs() {
           📊 Visualization
         </button>
         <button
-          className={`px-6 py-3 font-semibold rounded-t transition focus:outline-none
+          className={`px-6 py-3 font-semibold rounded-t transition focus:outline-hidden
             ${
               activeMode === "ai-analysis"
                 ? "border-b-4 border-primary text-primary bg-white/5"

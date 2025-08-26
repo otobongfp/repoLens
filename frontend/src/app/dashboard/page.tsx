@@ -15,10 +15,10 @@ function AppContent() {
   const { graph, isLoading, error } = useGraphData();
 
   return (
-    <div className="min-h-screen bg-[#1a1f2b] flex flex-col">
+    <div className="min-h-screen bg-sidebar flex flex-col">
       <Navbar>
         <button
-          className="md:hidden p-2 text-primary focus:outline-none"
+          className="md:hidden p-2 text-primary focus:outline-hidden"
           onClick={() => setSidebarOpen((v: boolean) => !v)}
           aria-label="Toggle sidebar"
         >
@@ -29,7 +29,7 @@ function AppContent() {
           </svg>
         </button>
       </Navbar>
-      <div className="flex flex-1 overflow-hidden bg-[#1a1f2b]">
+      <div className="flex flex-1 overflow-hidden bg-sidebar">
         {/* Sidebar: hidden on mobile if toggled off */}
         <div
           className={`transition-all duration-300 ${

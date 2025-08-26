@@ -67,7 +67,7 @@ function FeatureCard({ feature }: { feature: FeatureCard }) {
 
   return (
     <div
-      className={`relative w-80 h-64 p-6 rounded-2xl shadow-xl border border-white/10 bg-white/5 backdrop-blur-sm cursor-pointer transition-all duration-300 ${
+      className={`relative w-80 h-64 p-6 rounded-2xl shadow-xl border border-white/10 bg-white/5 backdrop-blur-xs cursor-pointer transition-all duration-300 ${
         feature.disabled
           ? "opacity-50 cursor-not-allowed"
           : "hover:scale-105 hover:shadow-2xl hover:bg-white/10 hover:border-primary/30"
@@ -94,7 +94,7 @@ function FeatureCard({ feature }: { feature: FeatureCard }) {
 
       {/* Hover Effect Overlay */}
       {!feature.disabled && (
-        <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-primary/10 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+        <div className="absolute inset-0 rounded-2xl bg-linear-to-br from-primary/10 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
       )}
     </div>
   );
@@ -102,10 +102,10 @@ function FeatureCard({ feature }: { feature: FeatureCard }) {
 
 export default function FeatureSelectPage() {
   return (
-    <div className="min-h-screen bg-[#1a1f2b] flex flex-col">
+    <div className="min-h-screen bg-sidebar flex flex-col">
       {/* Background Effects */}
       <div className="absolute inset-0 -z-10 pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[400px] h-[400px] bg-[#1db470] opacity-20 rounded-full filter blur-3xl" />
+        <div className="absolute top-[-10%] left-[-10%] w-[400px] h-[400px] bg-primary opacity-20 rounded-full filter blur-3xl" />
         <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-blue-400 opacity-15 rounded-full filter blur-2xl" />
         <div className="absolute top-[30%] left-[60%] w-[300px] h-[300px] bg-pink-300 opacity-15 rounded-full filter blur-2xl" />
       </div>

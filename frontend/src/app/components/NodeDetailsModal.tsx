@@ -105,7 +105,7 @@ export default function NodeDetailsModal({
             <h4 className="text-sm font-semibold text-gray-300 mb-1">
               File Path
             </h4>
-            <p className="text-sm text-gray-400 font-mono bg-gray-800 p-2 rounded">
+            <p className="text-sm text-gray-400 font-mono bg-gray-800 p-2 rounded-sm">
               {node.path}
             </p>
           </div>
@@ -184,7 +184,7 @@ export default function NodeDetailsModal({
                       return (
                         <div
                           key={index}
-                          className="flex items-center space-x-2 bg-gray-800/30 rounded p-2"
+                          className="flex items-center space-x-2 bg-gray-800/30 rounded-sm p-2"
                         >
                           <span
                             className="w-3 h-3 rounded-full"
@@ -236,7 +236,7 @@ export default function NodeDetailsModal({
                       return (
                         <div
                           key={index}
-                          className="flex items-center space-x-2 bg-gray-800/30 rounded p-2"
+                          className="flex items-center space-x-2 bg-gray-800/30 rounded-sm p-2"
                         >
                           <span
                             className="w-3 h-3 rounded-full"
