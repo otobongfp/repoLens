@@ -1,13 +1,13 @@
-import React from "react";
+import React from 'react';
 
-import { useGraphData } from "../context/GraphDataProvider";
+import { useGraphData } from '../context/GraphDataProvider';
 
 export default function FunctionFlowView() {
   const { graph } = useGraphData();
   // Guard against invalid graph structure
   if (!graph || !Array.isArray(graph.nodes) || !Array.isArray(graph.edges)) {
     return (
-      <div className="text-center text-lg text-primary py-16">
+      <div className='text-primary py-16 text-center text-lg'>
         Invalid graph data
       </div>
     );
@@ -15,11 +15,11 @@ export default function FunctionFlowView() {
 
   if (!graph)
     return (
-      <div className="text-center text-lg text-primary py-16">No data</div>
+      <div className='text-primary py-16 text-center text-lg'>No data</div>
     );
 
   // Get all functions
-  const functions = graph.nodes.filter((n: any) => n.type === "function");
+  const functions = graph.nodes.filter((n: any) => n.type === 'function');
 
   // For each function, find calls edges
   const callsByFunc: Record<
@@ -32,13 +32,13 @@ export default function FunctionFlowView() {
 
     // Find all call edges from this function
     const callEdges = graph.edges.filter(
-      (e: any) => e.type === "calls" && e.from === fn.id
+      (e: any) => e.type === 'calls' && e.from === fn.id,
     );
 
     callEdges.forEach((edge: any) => {
       // Try to find the called function as a node
       const callee = graph.nodes.find(
-        (n: any) => n.id === edge.to && n.type === "function"
+        (n: any) => n.id === edge.to && n.type === 'function',
       );
 
       if (callee) {
@@ -47,13 +47,13 @@ export default function FunctionFlowView() {
       } else {
         // External call - function not found in graph (might be external library or not parsed)
         // Extract function name from the edge.to (format: "external:functionName")
-        const funcName = edge.to.split(":").pop() || "unknown";
+        const funcName = edge.to.split(':').pop() || 'unknown';
         callsByFunc[fn.id].push({
           callee: {
             id: edge.to,
             label: funcName,
-            type: "function",
-            path: "external",
+            type: 'function',
+            path: 'external',
             meta: { external: true },
           },
           edge,
@@ -64,7 +64,7 @@ export default function FunctionFlowView() {
   });
 
   // Get files for context
-  const files = graph.nodes.filter((n: any) => n.type === "file");
+  const files = graph.nodes.filter((n: any) => n.type === 'file');
   const fileById = files.reduce((acc: any, file: any) => {
     acc[file.id] = file;
     return acc;
@@ -74,7 +74,7 @@ export default function FunctionFlowView() {
   const functionFile: Record<string, any> = {};
   functions.forEach((fn: any) => {
     const containsEdge = graph.edges.find(
-      (e: any) => e.type === "contains" && e.to === fn.id
+      (e: any) => e.type === 'contains' && e.to === fn.id,
     );
     if (containsEdge) {
       functionFile[fn.id] = fileById[containsEdge.from];
@@ -82,54 +82,54 @@ export default function FunctionFlowView() {
   });
 
   const hasAnyCalls = Object.values(callsByFunc).some(
-    (calls: any) => calls.length > 0
+    (calls: any) => calls.length > 0,
   );
 
   return (
-    <div className="py-4">
-      <h2 className="text-xl font-bold text-primary mb-4">Function Flow</h2>
+    <div className='py-4'>
+      <h2 className='text-primary mb-4 text-xl font-bold'>Function Flow</h2>
       {!hasAnyCalls ? (
-        <div className="text-center text-white/70 py-8">
+        <div className='py-8 text-center text-white/70'>
           No function call relationships found.
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className='space-y-6'>
           {functions.map((fn: any) => {
             const calls = callsByFunc[fn.id];
             if (calls.length === 0) return null;
 
             const file = functionFile[fn.id];
             return (
-              <div key={fn.id} className="bg-white/5 rounded-lg p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="text-primary font-bold">⚡</span>
-                  <span className="font-semibold text-primary">{fn.label}</span>
+              <div key={fn.id} className='rounded-lg bg-white/5 p-4'>
+                <div className='mb-3 flex items-center gap-2'>
+                  <span className='text-primary font-bold'>⚡</span>
+                  <span className='text-primary font-semibold'>{fn.label}</span>
                   {file && (
-                    <span className="text-white/60 text-sm">
+                    <span className='text-sm text-white/60'>
                       in {file.label}
                     </span>
                   )}
                 </div>
-                <div className="ml-6 space-y-2">
+                <div className='ml-6 space-y-2'>
                   {calls.map((call: any, idx: number) => (
-                    <div key={idx} className="flex items-center gap-2">
-                      <span className="text-white/40">→</span>
+                    <div key={idx} className='flex items-center gap-2'>
+                      <span className='text-white/40'>→</span>
                       <span
                         className={`${
                           call.isExternal
-                            ? "text-purple-400 italic"
-                            : "text-green-400"
+                            ? 'italic text-purple-400'
+                            : 'text-green-400'
                         }`}
                       >
                         {call.callee.label}
                       </span>
                       {call.isExternal && (
-                        <span className="text-xs text-white/50">
+                        <span className='text-xs text-white/50'>
                           (external)
                         </span>
                       )}
                       {!call.isExternal && functionFile[call.callee.id] && (
-                        <span className="text-white/60 text-sm">
+                        <span className='text-sm text-white/60'>
                           in {functionFile[call.callee.id].label}
                         </span>
                       )}
@@ -141,7 +141,7 @@ export default function FunctionFlowView() {
           })}
         </div>
       )}
-      <div className="mt-4 text-xs text-white/50">
+      <div className='mt-4 text-xs text-white/50'>
         Shows function call relationships. External calls are shown in purple.
       </div>
     </div>

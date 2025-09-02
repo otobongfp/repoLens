@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from "react";
-import * as d3 from "d3";
-import NodeDetailsModal from "./NodeDetailsModal";
-import { useGraphData } from "../context/GraphDataProvider";
+import { useEffect, useRef, useState } from 'react';
+import * as d3 from 'd3';
+import NodeDetailsModal from './NodeDetailsModal';
+import { useGraphData } from '../context/GraphDataProvider';
 
 export default function GraphView({
   fullscreen,
@@ -47,19 +47,19 @@ export default function GraphView({
       setBrowserFullscreen(!!document.fullscreenElement);
     };
 
-    document.addEventListener("fullscreenchange", handleFullscreenChange);
-    document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
-    document.addEventListener("msfullscreenchange", handleFullscreenChange);
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('msfullscreenchange', handleFullscreenChange);
 
     return () => {
-      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
       document.removeEventListener(
-        "webkitfullscreenchange",
-        handleFullscreenChange
+        'webkitfullscreenchange',
+        handleFullscreenChange,
       );
       document.removeEventListener(
-        "msfullscreenchange",
-        handleFullscreenChange
+        'msfullscreenchange',
+        handleFullscreenChange,
       );
     };
   }, []);
@@ -79,7 +79,7 @@ export default function GraphView({
     const containerRect = container.getBoundingClientRect();
 
     const svg = d3.select(svgRef.current);
-    svg.selectAll("*").remove();
+    svg.selectAll('*').remove();
 
     // Use full browser dimensions when in browser fullscreen, otherwise use container dimensions
     const width = browserFullscreen
@@ -87,17 +87,17 @@ export default function GraphView({
       : Math.max(800, containerRect.width);
     const height = browserFullscreen ? window.innerHeight : 600;
 
-    svg.attr("width", width).attr("height", height);
+    svg.attr('width', width).attr('height', height);
 
     // Create main group for zoom/pan
-    const g = svg.append("g");
+    const g = svg.append('g');
 
     // Add zoom behavior
     const zoom = d3
       .zoom()
       .scaleExtent([0.1, 5]) // Allow more extreme zoom levels for complex graphs
-      .on("zoom", (event) => {
-        g.attr("transform", event.transform);
+      .on('zoom', (event) => {
+        g.attr('transform', event.transform);
         setZoomLevel(event.transform.k);
       });
 
@@ -108,11 +108,11 @@ export default function GraphView({
     // Create a set of valid node IDs for quick lookup
     const validNodeIds = new Set(nodes.map((n: any) => n.id));
 
-    console.log("Graph data:", {
+    console.log('Graph data:', {
       nodes: graph.nodes.length,
       edges: graph.edges.length,
     });
-    console.log("Sample edges:", graph.edges.slice(0, 5));
+    console.log('Sample edges:', graph.edges.slice(0, 5));
 
     // Filter edges to only include those where both source and target nodes exist
     const links = graph.edges
@@ -122,8 +122,8 @@ export default function GraphView({
         if (!hasSource || !hasTarget) {
           console.warn(
             `Skipping edge ${e.from} -> ${e.to}: ${
-              !hasSource ? "source missing" : "target missing"
-            }`
+              !hasSource ? 'source missing' : 'target missing'
+            }`,
           );
         }
         return hasSource && hasTarget;
@@ -139,25 +139,25 @@ export default function GraphView({
     const simulation = d3
       .forceSimulation(nodes)
       .force(
-        "link",
+        'link',
         d3
           .forceLink(links)
           .id((d: any) => d.id)
-          .distance(150) // Increased distance for less clustering
+          .distance(150), // Increased distance for less clustering
       )
-      .force("charge", d3.forceManyBody().strength(-500)) // Stronger repulsion
-      .force("center", d3.forceCenter(width / 2, height / 2))
-      .force("collision", d3.forceCollide().radius(20)); // Prevent node overlap
+      .force('charge', d3.forceManyBody().strength(-500)) // Stronger repulsion
+      .force('center', d3.forceCenter(width / 2, height / 2))
+      .force('collision', d3.forceCollide().radius(20)); // Prevent node overlap
 
     const link = g
-      .append("g")
-      .attr("stroke", "#999")
-      .attr("stroke-opacity", 0.6)
-      .selectAll("line")
+      .append('g')
+      .attr('stroke', '#999')
+      .attr('stroke-opacity', 0.6)
+      .selectAll('line')
       .data(links)
-      .join("line")
-      .attr("stroke-width", 1.5)
-      .append("title")
+      .join('line')
+      .attr('stroke-width', 1.5)
+      .append('title')
       .text((d: any) => {
         let label = `${d.type}`;
         if (d.meta && d.meta.line) label += ` (line ${d.meta.line})`;
@@ -166,85 +166,85 @@ export default function GraphView({
 
     const node = (
       g
-        .append("g")
-        .attr("stroke", "#fff")
-        .attr("stroke-width", 1.5)
-        .selectAll("g")
+        .append('g')
+        .attr('stroke', '#fff')
+        .attr('stroke-width', 1.5)
+        .selectAll('g')
         .data(nodes)
-        .join("g") as any
+        .join('g') as any
     )
       .call(drag(simulation))
-      .style("cursor", "pointer")
-      .on("click", (event: any, d: any) => {
+      .style('cursor', 'pointer')
+      .on('click', (event: any, d: any) => {
         setSelectedNode(d);
         setIsModalOpen(true);
       })
-      .on("mouseover", function (this: any, event: any, d: any) {
+      .on('mouseover', function (this: any, event: any, d: any) {
         d3.select(this)
-          .select("circle")
+          .select('circle')
           .transition()
           .duration(200)
-          .attr("r", browserFullscreen ? 16 : 12);
+          .attr('r', browserFullscreen ? 16 : 12);
         d3.select(this)
-          .select("text")
+          .select('text')
           .transition()
           .duration(200)
-          .style("font-weight", "bold");
+          .style('font-weight', 'bold');
       })
-      .on("mouseout", function (this: any, event: any, d: any) {
+      .on('mouseout', function (this: any, event: any, d: any) {
         d3.select(this)
-          .select("circle")
+          .select('circle')
           .transition()
           .duration(200)
-          .attr("r", browserFullscreen ? 12 : 8);
+          .attr('r', browserFullscreen ? 12 : 8);
         d3.select(this)
-          .select("text")
+          .select('text')
           .transition()
           .duration(200)
-          .style("font-weight", "normal");
+          .style('font-weight', 'normal');
       });
 
     node
-      .append("circle")
-      .attr("r", browserFullscreen ? 12 : 8)
-      .attr("fill", (d: any) => colorForType(d.type, d.meta))
-      .style("filter", "drop-shadow(0 0 4px rgba(255,255,255,0.1))");
+      .append('circle')
+      .attr('r', browserFullscreen ? 12 : 8)
+      .attr('fill', (d: any) => colorForType(d.type, d.meta))
+      .style('filter', 'drop-shadow(0 0 4px rgba(255,255,255,0.1))');
 
-    node.append("title").text((d: any) => {
-      if (d.type === "file") {
+    node.append('title').text((d: any) => {
+      if (d.type === 'file') {
         return `${d.label} (file)\nPath: ${d.path}`;
-      } else if (d.type === "function") {
+      } else if (d.type === 'function') {
         if (d.meta?.external) {
           return `${d.label} (external function)\nCalled from: ${
-            d.meta?.parent_file || "unknown"
+            d.meta?.parent_file || 'unknown'
           }`;
         } else {
           return `${d.label} (function)\nFile: ${d.path}\nLines: ${d.meta?.start_line}-${d.meta?.end_line}`;
         }
-      } else if (d.type === "class") {
+      } else if (d.type === 'class') {
         return `${d.label} (class)\nFile: ${d.path}\nLines: ${d.meta?.start_line}-${d.meta?.end_line}`;
-      } else if (d.type === "import") {
+      } else if (d.type === 'import') {
         return `${d.label} (import)\nSource: ${d.meta?.source_file}`;
       }
       return `${d.label} (${d.type})`;
     });
 
     node
-      .append("text")
+      .append('text')
       .text((d: any) => d.label)
-      .attr("x", browserFullscreen ? 16 : 12)
-      .attr("y", "0.31em")
-      .attr("fill", "#1db470")
-      .style("font-size", browserFullscreen ? "14px" : "10px");
+      .attr('x', browserFullscreen ? 16 : 12)
+      .attr('y', '0.31em')
+      .attr('fill', '#1db470')
+      .style('font-size', browserFullscreen ? '14px' : '10px');
 
-    simulation.on("tick", () => {
+    simulation.on('tick', () => {
       svg
-        .selectAll("line")
-        .attr("x1", (d: any) => d.source.x)
-        .attr("y1", (d: any) => d.source.y)
-        .attr("x2", (d: any) => d.target.x)
-        .attr("y2", (d: any) => d.target.y);
-      node.attr("transform", (d: any) => `translate(${d.x},${d.y})`);
+        .selectAll('line')
+        .attr('x1', (d: any) => d.source.x)
+        .attr('y1', (d: any) => d.source.y)
+        .attr('x2', (d: any) => d.target.x)
+        .attr('y2', (d: any) => d.target.y);
+      node.attr('transform', (d: any) => `translate(${d.x},${d.y})`);
     });
 
     // Auto-fit to view after simulation settles
@@ -254,12 +254,12 @@ export default function GraphView({
         const scale = Math.min(
           (width - 100) / bounds.width,
           (height - 100) / bounds.height,
-          1
+          1,
         );
         const transform = d3.zoomIdentity
           .translate(
             width / 2 - (bounds.x + bounds.width / 2) * scale,
-            height / 2 - (bounds.y + bounds.height / 2) * scale
+            height / 2 - (bounds.y + bounds.height / 2) * scale,
           )
           .scale(scale);
         svg.call(zoom.transform as any, transform);
@@ -268,16 +268,16 @@ export default function GraphView({
 
     function colorForType(type: string, meta?: any) {
       switch (type) {
-        case "file":
-          return "#1f77b4";
-        case "function":
-          return meta?.external ? "#9467bd" : "#2ca02c"; // Purple for external functions
-        case "class":
-          return "#ff7f0e";
-        case "import":
-          return "#d62728";
+        case 'file':
+          return '#1f77b4';
+        case 'function':
+          return meta?.external ? '#9467bd' : '#2ca02c'; // Purple for external functions
+        case 'class':
+          return '#ff7f0e';
+        case 'import':
+          return '#d62728';
         default:
-          return "#888";
+          return '#888';
       }
     }
 
@@ -298,9 +298,9 @@ export default function GraphView({
       }
       return d3
         .drag()
-        .on("start", dragstarted)
-        .on("drag", dragged)
-        .on("end", dragended);
+        .on('start', dragstarted)
+        .on('drag', dragged)
+        .on('end', dragended);
     }
   }, [graph, browserFullscreen]);
 
@@ -336,59 +336,59 @@ export default function GraphView({
 
   return (
     <div
-      className={`relative w-full flex justify-center items-center ${
-        fullscreen ? "h-full" : ""
+      className={`relative flex w-full items-center justify-center ${
+        fullscreen ? 'h-full' : ''
       }`}
     >
       {/* Container fullscreen button */}
       {setFullscreen && (
         <button
-          className="absolute top-4 right-4 z-10 bg-primary text-white rounded-full p-2 shadow-lg hover:bg-primary/80 transition"
+          className='bg-primary hover:bg-primary/80 absolute right-4 top-4 z-10 rounded-full p-2 text-white shadow-lg transition'
           onClick={() => setFullscreen(!fullscreen)}
-          title="Toggle container fullscreen"
+          title='Toggle container fullscreen'
         >
-          {fullscreen ? "Exit Fullscreen" : "Fullscreen"}
+          {fullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
         </button>
       )}
 
       {/* Browser fullscreen button */}
       <button
-        className="absolute top-4 right-16 z-10 bg-primary text-white rounded-full p-2 shadow-lg hover:bg-[#158452] transition"
+        className='bg-primary absolute right-16 top-4 z-10 rounded-full p-2 text-white shadow-lg transition hover:bg-[#158452]'
         onClick={
           browserFullscreen ? exitBrowserFullscreen : enterBrowserFullscreen
         }
         title={
           browserFullscreen
-            ? "Exit browser fullscreen"
-            : "Enter browser fullscreen"
+            ? 'Exit browser fullscreen'
+            : 'Enter browser fullscreen'
         }
       >
-        {browserFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+        {browserFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
       </button>
 
       {/* Zoom controls */}
-      <div className="absolute top-4 left-4 z-10 flex items-center gap-2 bg-black/20 backdrop-blur-xs rounded-lg p-2">
-        <span className="text-xs text-white/60">
+      <div className='backdrop-blur-xs absolute left-4 top-4 z-10 flex items-center gap-2 rounded-lg bg-black/20 p-2'>
+        <span className='text-xs text-white/60'>
           Zoom: {Math.round(zoomLevel * 100)}%
         </span>
         <button
           onClick={zoomOut}
-          className="px-2 py-1 text-xs bg-white/10 hover:bg-white/20 rounded-sm border border-white/20"
-          title="Zoom Out"
+          className='rounded-sm border border-white/20 bg-white/10 px-2 py-1 text-xs hover:bg-white/20'
+          title='Zoom Out'
         >
           −
         </button>
         <button
           onClick={resetZoom}
-          className="px-2 py-1 text-xs bg-white/10 hover:bg-white/20 rounded-sm border border-white/20"
-          title="Reset Zoom"
+          className='rounded-sm border border-white/20 bg-white/10 px-2 py-1 text-xs hover:bg-white/20'
+          title='Reset Zoom'
         >
           ⌂
         </button>
         <button
           onClick={zoomIn}
-          className="px-2 py-1 text-xs bg-white/10 hover:bg-white/20 rounded-sm border border-white/20"
-          title="Zoom In"
+          className='rounded-sm border border-white/20 bg-white/10 px-2 py-1 text-xs hover:bg-white/20'
+          title='Zoom In'
         >
           +
         </button>
@@ -397,19 +397,19 @@ export default function GraphView({
       {/* Scrollable container */}
       <div
         ref={containerRef}
-        className={`relative overflow-auto border rounded bg-white/5 shadow ${
-          fullscreen ? "w-full h-[90vh]" : "w-full h-[600px]"
-        } ${browserFullscreen ? "w-full h-full" : ""}`}
+        className={`relative overflow-auto rounded border bg-white/5 shadow ${
+          fullscreen ? 'h-[90vh] w-full' : 'h-[600px] w-full'
+        } ${browserFullscreen ? 'h-full w-full' : ''}`}
       >
         <svg
           ref={svgRef}
-          className={`block ${fullscreen ? "w-full h-full" : ""} ${
-            browserFullscreen ? "w-full h-full" : ""
+          className={`block ${fullscreen ? 'h-full w-full' : ''} ${
+            browserFullscreen ? 'h-full w-full' : ''
           }`}
         />
 
         {/* Navigation hint overlay */}
-        <div className="absolute bottom-4 left-4 text-xs text-white/40 bg-black/20 px-2 py-1 rounded-sm">
+        <div className='absolute bottom-4 left-4 rounded-sm bg-black/20 px-2 py-1 text-xs text-white/40'>
           Drag to pan • Scroll to zoom • Click nodes for details
         </div>
       </div>

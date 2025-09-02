@@ -1,6 +1,6 @@
-"use client";
-import React, { createContext, useContext, useState, useEffect } from "react";
-import { repositoryCache } from "../utils/storage";
+'use client';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { repositoryCache } from '../utils/storage';
 
 interface GraphDataContextType {
   graph: any;
@@ -19,11 +19,11 @@ interface GraphDataContextType {
 const GraphDataContext = createContext<GraphDataContextType>({
   graph: null,
   setGraph: () => {},
-  currentFolder: "",
+  currentFolder: '',
   setCurrentFolder: () => {},
   isLoading: false,
   setIsLoading: () => {},
-  error: "",
+  error: '',
   setError: () => {},
   fromCache: false,
   loadFromCache: async () => false,
@@ -36,9 +36,9 @@ export const GraphDataProvider = ({
   children: React.ReactNode;
 }) => {
   const [graph, setGraph] = useState<any>(null);
-  const [currentFolder, setCurrentFolder] = useState("");
+  const [currentFolder, setCurrentFolder] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
   const [fromCache, setFromCache] = useState(false);
 
   // Load the most recently analyzed repository on mount
@@ -54,13 +54,13 @@ export const GraphDataProvider = ({
             setCurrentFolder(recentEntry.folderPath);
             setFromCache(true);
             console.log(
-              "Loaded previous repository from cache:",
-              recentEntry.folderPath
+              'Loaded previous repository from cache:',
+              recentEntry.folderPath,
             );
           }
         }
       } catch (error) {
-        console.error("Failed to load last repository:", error);
+        console.error('Failed to load last repository:', error);
       }
     };
 
@@ -74,21 +74,21 @@ export const GraphDataProvider = ({
         setGraph(cached);
         setCurrentFolder(folderPath);
         setFromCache(true);
-        setError("");
+        setError('');
         return true;
       }
       return false;
     } catch (error) {
-      console.error("Failed to load from cache:", error);
+      console.error('Failed to load from cache:', error);
       return false;
     }
   };
 
   const clearGraph = () => {
     setGraph(null);
-    setCurrentFolder("");
+    setCurrentFolder('');
     setFromCache(false);
-    setError("");
+    setError('');
   };
 
   return (

@@ -8,9 +8,9 @@ interface CacheEntry {
 }
 
 class RepositoryCache {
-  private dbName = "repolens-cache";
+  private dbName = 'repolens-cache';
   private dbVersion = 1;
-  private storeName = "repository-analysis";
+  private storeName = 'repository-analysis';
   private db: IDBDatabase | null = null;
 
   async init(): Promise<void> {
@@ -28,9 +28,9 @@ class RepositoryCache {
 
         // Create object store if it doesn't exist
         if (!db.objectStoreNames.contains(this.storeName)) {
-          const store = db.createObjectStore(this.storeName, { keyPath: "id" });
-          store.createIndex("folderPath", "folderPath", { unique: false });
-          store.createIndex("timestamp", "timestamp", { unique: false });
+          const store = db.createObjectStore(this.storeName, { keyPath: 'id' });
+          store.createIndex('folderPath', 'folderPath', { unique: false });
+          store.createIndex('timestamp', 'timestamp', { unique: false });
         }
       };
     });
@@ -46,7 +46,7 @@ class RepositoryCache {
     await this.ensureDB();
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction([this.storeName], "readwrite");
+      const transaction = this.db!.transaction([this.storeName], 'readwrite');
       const store = transaction.objectStore(this.storeName);
 
       const entry: CacheEntry = {
@@ -67,9 +67,9 @@ class RepositoryCache {
     await this.ensureDB();
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction([this.storeName], "readonly");
+      const transaction = this.db!.transaction([this.storeName], 'readonly');
       const store = transaction.objectStore(this.storeName);
-      const index = store.index("folderPath");
+      const index = store.index('folderPath');
 
       const request = index.get(folderPath);
 
@@ -96,9 +96,9 @@ class RepositoryCache {
     await this.ensureDB();
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction([this.storeName], "readwrite");
+      const transaction = this.db!.transaction([this.storeName], 'readwrite');
       const store = transaction.objectStore(this.storeName);
-      const index = store.index("folderPath");
+      const index = store.index('folderPath');
 
       // First get the entry to find its ID
       const getRequest = index.get(folderPath);
@@ -122,7 +122,7 @@ class RepositoryCache {
     await this.ensureDB();
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction([this.storeName], "readwrite");
+      const transaction = this.db!.transaction([this.storeName], 'readwrite');
       const store = transaction.objectStore(this.storeName);
 
       const request = store.clear();
@@ -136,7 +136,7 @@ class RepositoryCache {
     await this.ensureDB();
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction([this.storeName], "readonly");
+      const transaction = this.db!.transaction([this.storeName], 'readonly');
       const store = transaction.objectStore(this.storeName);
 
       const countRequest = store.count();
@@ -164,11 +164,11 @@ class RepositoryCache {
     await this.ensureDB();
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction([this.storeName], "readonly");
+      const transaction = this.db!.transaction([this.storeName], 'readonly');
       const store = transaction.objectStore(this.storeName);
-      const index = store.index("timestamp");
+      const index = store.index('timestamp');
 
-      const request = index.openCursor(null, "prev");
+      const request = index.openCursor(null, 'prev');
 
       request.onsuccess = () => {
         const cursor = request.result;

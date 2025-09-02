@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import Navbar from "../../components/Navbar";
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import Navbar from '../../components/Navbar';
 import {
   CodeIcon,
   PuzzleIcon,
   BrainIcon,
   BotIcon,
-} from "../../components/LucideIcons";
+} from '../../components/LucideIcons';
 
 interface FeatureCard {
   id: string;
@@ -22,37 +22,37 @@ interface FeatureCard {
 
 const features: FeatureCard[] = [
   {
-    id: "analyze",
-    title: "Analyze Any Open-Source Repo",
+    id: 'analyze',
+    title: 'Analyze Any Open-Source Repo',
     description:
-      "Upload or link a GitHub repo to get instant structure and insights.",
-    icon: <CodeIcon className="text-primary" size={48} />,
-    route: "/dashboard/analyze",
+      'Upload or link a GitHub repo to get instant structure and insights.',
+    icon: <CodeIcon className='text-primary' size={48} />,
+    route: '/dashboard/analyze',
   },
   {
-    id: "components",
-    title: "Dismember Repo into Components",
+    id: 'components',
+    title: 'Dismember Repo into Components',
     description:
-      "Break down repos into technologies, algorithms, and a linked learning graph.",
-    icon: <PuzzleIcon className="text-primary" size={48} />,
-    route: "/dashboard/components",
+      'Break down repos into technologies, algorithms, and a linked learning graph.',
+    icon: <PuzzleIcon className='text-primary' size={48} />,
+    route: '/dashboard/components',
   },
   {
-    id: "learning",
-    title: "Micro-Learning",
+    id: 'learning',
+    title: 'Micro-Learning',
     description:
-      "Pick a path, assess your knowledge, and follow a curated journey.",
-    icon: <BrainIcon className="text-primary" size={48} />,
-    route: "/dashboard/learning",
+      'Pick a path, assess your knowledge, and follow a curated journey.',
+    icon: <BrainIcon className='text-primary' size={48} />,
+    route: '/dashboard/learning',
     disabled: true,
     comingSoon: true,
   },
   {
-    id: "ai-assistant",
-    title: "Ask the RepoLens AI",
-    description: "Chat with RepoLens AI about the repo and its inner workings.",
-    icon: <BotIcon className="text-primary" size={48} />,
-    route: "/dashboard/ai-assistant",
+    id: 'ai-assistant',
+    title: 'Ask the RepoLens AI',
+    description: 'Chat with RepoLens AI about the repo and its inner workings.',
+    icon: <BotIcon className='text-primary' size={48} />,
+    route: '/dashboard/ai-assistant',
   },
 ];
 
@@ -67,34 +67,34 @@ function FeatureCard({ feature }: { feature: FeatureCard }) {
 
   return (
     <div
-      className={`relative w-80 h-64 p-6 rounded-2xl shadow-xl border border-white/10 bg-white/5 backdrop-blur-xs cursor-pointer transition-all duration-300 ${
+      className={`backdrop-blur-xs relative h-64 w-80 cursor-pointer rounded-2xl border border-white/10 bg-white/5 p-6 shadow-xl transition-all duration-300 ${
         feature.disabled
-          ? "opacity-50 cursor-not-allowed"
-          : "hover:scale-105 hover:shadow-2xl hover:bg-white/10 hover:border-primary/30"
+          ? 'cursor-not-allowed opacity-50'
+          : 'hover:border-primary/30 hover:scale-105 hover:bg-white/10 hover:shadow-2xl'
       }`}
       onClick={handleClick}
     >
       {/* Coming Soon Badge */}
       {feature.comingSoon && (
-        <div className="absolute -top-2 -right-2 bg-orange-500 text-white text-xs px-3 py-1 rounded-full font-semibold">
+        <div className='absolute -right-2 -top-2 rounded-full bg-orange-500 px-3 py-1 text-xs font-semibold text-white'>
           Coming Soon
         </div>
       )}
 
       {/* Icon */}
-      <div className="mb-4">{feature.icon}</div>
+      <div className='mb-4'>{feature.icon}</div>
 
       {/* Title */}
-      <h3 className="text-xl font-bold mb-3 text-white">{feature.title}</h3>
+      <h3 className='mb-3 text-xl font-bold text-white'>{feature.title}</h3>
 
       {/* Description */}
-      <p className="text-sm text-gray-300 leading-relaxed">
+      <p className='text-sm leading-relaxed text-gray-300'>
         {feature.description}
       </p>
 
       {/* Hover Effect Overlay */}
       {!feature.disabled && (
-        <div className="absolute inset-0 rounded-2xl bg-linear-to-br from-primary/10 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+        <div className='bg-linear-to-br from-primary/10 pointer-events-none absolute inset-0 rounded-2xl to-transparent opacity-0 transition-opacity duration-300 hover:opacity-100' />
       )}
     </div>
   );
@@ -102,48 +102,48 @@ function FeatureCard({ feature }: { feature: FeatureCard }) {
 
 export default function FeatureSelectPage() {
   return (
-    <div className="min-h-screen bg-sidebar flex flex-col">
+    <div className='bg-sidebar flex min-h-screen flex-col'>
       {/* Background Effects */}
-      <div className="absolute inset-0 -z-10 pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[400px] h-[400px] bg-primary opacity-20 rounded-full filter blur-3xl" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-blue-400 opacity-15 rounded-full filter blur-2xl" />
-        <div className="absolute top-[30%] left-[60%] w-[300px] h-[300px] bg-pink-300 opacity-15 rounded-full filter blur-2xl" />
+      <div className='pointer-events-none absolute inset-0 -z-10'>
+        <div className='bg-primary absolute left-[-10%] top-[-10%] h-[400px] w-[400px] rounded-full opacity-20 blur-3xl filter' />
+        <div className='absolute bottom-[-10%] right-[-10%] h-[500px] w-[500px] rounded-full bg-blue-400 opacity-15 blur-2xl filter' />
+        <div className='absolute left-[60%] top-[30%] h-[300px] w-[300px] rounded-full bg-pink-300 opacity-15 blur-2xl filter' />
       </div>
 
       {/* Navbar */}
       <Navbar>
         <Link
-          href="/"
-          className="text-primary hover:text-primary/80 transition-colors text-sm font-medium"
+          href='/'
+          className='text-primary hover:text-primary/80 text-sm font-medium transition-colors'
         >
           ← Back to Landing
         </Link>
       </Navbar>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col items-center justify-center px-4 py-8">
+      <main className='flex flex-1 flex-col items-center justify-center px-4 py-8'>
         {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
+        <div className='mb-12 text-center'>
+          <h1 className='mb-4 text-4xl font-bold text-white md:text-5xl'>
             Choose Your Path
           </h1>
-          <p className="text-xl text-gray-300 max-w-2xl">
+          <p className='max-w-2xl text-xl text-gray-300'>
             Select how you'd like to explore and understand code with RepoLens
           </p>
         </div>
 
         {/* Feature Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl w-full">
+        <div className='grid w-full max-w-4xl grid-cols-1 gap-8 md:grid-cols-2'>
           {features.map((feature) => (
-            <div key={feature.id} className="flex justify-center">
+            <div key={feature.id} className='flex justify-center'>
               <FeatureCard feature={feature} />
             </div>
           ))}
         </div>
 
         {/* Footer */}
-        <div className="mt-16 text-center">
-          <p className="text-gray-400 text-sm">
+        <div className='mt-16 text-center'>
+          <p className='text-sm text-gray-400'>
             Each tool is designed to help you understand code in different ways
           </p>
         </div>
