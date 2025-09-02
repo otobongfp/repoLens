@@ -8,10 +8,14 @@
     "start": "next start"
   },
   "dependencies": {
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "d3": "^7.8.5",
+    "lucide-react": "^0.542.0",
     "next": "latest",
     "react": "latest",
-    "react-dom": "latest"
+    "react-dom": "latest",
+    "tailwind-merge": "^3.3.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.12",
@@ -20,6 +24,7 @@
     "@types/react": "^19.1.8",
     "postcss": "^8.4.24",
     "tailwindcss": "^4.1.12",
+    "tw-animate-css": "^1.3.7",
     "typescript": "^5.0.4"
   }
 }
