@@ -2,6 +2,7 @@
 import { SearchCode } from 'lucide-react';
 import { useRepolensApi } from '../utils/api';
 import Link from 'next/link';
+import { ThemeToggle } from '@/components/theme/ThemeToggle';
 
 export default function Navbar({ children }: { children?: React.ReactNode }) {
   const { isLocal } = useRepolensApi();
@@ -12,20 +13,22 @@ export default function Navbar({ children }: { children?: React.ReactNode }) {
         <Link href='/'>
           <span className='text-primary font-manrope mr-4 text-2xl font-bold tracking-tight'>
             R<span className='text-lg'>EP</span>
-            <SearchCode className='mx-[1px] inline' size={20} />L
+            <SearchCode className='mx-[1px] ml-[2px] inline' size={20} />L
             <span className='text-lg'>ENS</span>
           </span>
         </Link>
-        <span
-          className={
-            isLocal
-              ? 'ml-4 rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-800'
-              : 'ml-4 rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-800'
-          }
-        >
-          {isLocal ? 'Connected to Local Agent' : 'Agent Not Connected'}
-        </span>
-        {children}
+        <section className='flex items-center gap-4'>
+          <span
+            className={
+              isLocal
+                ? 'ml-4 rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-800'
+                : 'text-destructive ml-4 rounded-full bg-red-100 px-3 py-1 text-xs font-semibold'
+            }
+          >
+            {isLocal ? 'Connected to Local Agent' : 'Agent Not Connected'}
+          </span>
+          <ThemeToggle />
+        </section>
       </section>
     </nav>
   );
