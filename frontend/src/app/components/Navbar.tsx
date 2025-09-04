@@ -1,4 +1,5 @@
 'use client';
+import { SearchCode } from 'lucide-react';
 import { useRepolensApi } from '../utils/api';
 import Link from 'next/link';
 
@@ -9,8 +10,10 @@ export default function Navbar({ children }: { children?: React.ReactNode }) {
     <nav className='border-border bg-background fixed z-50 flex w-full items-center justify-center border px-6 py-4 text-white'>
       <section className='flex w-full max-w-5xl items-center justify-between xl:max-w-[1200px]'>
         <Link href='/'>
-          <span className='text-primary mr-4 text-2xl font-bold tracking-tight'>
-            RepoLens
+          <span className='text-primary font-manrope mr-4 text-2xl font-bold tracking-tight'>
+            R<span className='text-lg'>EP</span>
+            <SearchCode className='mx-[1px] inline' size={20} />L
+            <span className='text-lg'>ENS</span>
           </span>
         </Link>
         <span
