@@ -67,7 +67,7 @@ function FeatureCard({ feature }: { feature: FeatureCard }) {
 
   return (
     <div
-      className={`backdrop-blur-xs relative h-64 w-80 cursor-pointer rounded-2xl border border-white/10 bg-white/5 p-6 shadow-xl transition-all duration-300 ${
+      className={`relative h-64 w-80 cursor-pointer rounded-2xl border border-white/10 bg-white/5 p-6 shadow-xl backdrop-blur-xs transition-all duration-300 ${
         feature.disabled
           ? 'cursor-not-allowed opacity-50'
           : 'hover:border-primary/30 hover:scale-105 hover:bg-white/10 hover:shadow-2xl'
@@ -76,7 +76,7 @@ function FeatureCard({ feature }: { feature: FeatureCard }) {
     >
       {/* Coming Soon Badge */}
       {feature.comingSoon && (
-        <div className='absolute -right-2 -top-2 rounded-full bg-orange-500 px-3 py-1 text-xs font-semibold text-white'>
+        <div className='absolute -top-2 -right-2 rounded-full bg-orange-500 px-3 py-1 text-xs font-semibold text-white'>
           Coming Soon
         </div>
       )}
@@ -94,7 +94,7 @@ function FeatureCard({ feature }: { feature: FeatureCard }) {
 
       {/* Hover Effect Overlay */}
       {!feature.disabled && (
-        <div className='bg-linear-to-br from-primary/10 pointer-events-none absolute inset-0 rounded-2xl to-transparent opacity-0 transition-opacity duration-300 hover:opacity-100' />
+        <div className='from-primary/10 pointer-events-none absolute inset-0 rounded-2xl bg-linear-to-br to-transparent opacity-0 transition-opacity duration-300 hover:opacity-100' />
       )}
     </div>
   );
@@ -105,9 +105,9 @@ export default function FeatureSelectPage() {
     <div className='bg-sidebar flex min-h-screen flex-col'>
       {/* Background Effects */}
       <div className='pointer-events-none absolute inset-0 -z-10'>
-        <div className='bg-primary absolute left-[-10%] top-[-10%] h-[400px] w-[400px] rounded-full opacity-20 blur-3xl filter' />
-        <div className='absolute bottom-[-10%] right-[-10%] h-[500px] w-[500px] rounded-full bg-blue-400 opacity-15 blur-2xl filter' />
-        <div className='absolute left-[60%] top-[30%] h-[300px] w-[300px] rounded-full bg-pink-300 opacity-15 blur-2xl filter' />
+        <div className='bg-primary absolute top-[-10%] left-[-10%] h-[400px] w-[400px] rounded-full opacity-20 blur-3xl filter' />
+        <div className='absolute right-[-10%] bottom-[-10%] h-[500px] w-[500px] rounded-full bg-blue-400 opacity-15 blur-2xl filter' />
+        <div className='absolute top-[30%] left-[60%] h-[300px] w-[300px] rounded-full bg-pink-300 opacity-15 blur-2xl filter' />
       </div>
 
       {/* Navbar */}
@@ -123,7 +123,7 @@ export default function FeatureSelectPage() {
       {/* Main Content */}
       <main className='flex flex-1 flex-col items-center justify-center px-4 py-8'>
         {/* Header */}
-        <div className='mb-12 text-center'>
+        <div className='mt-12 mb-12 text-center'>
           <h1 className='mb-4 text-4xl font-bold text-white md:text-5xl'>
             Choose Your Path
           </h1>
