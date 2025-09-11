@@ -29,7 +29,7 @@ export default function Hero() {
       </div>
 
       <section className='relative flex h-96 w-full flex-col justify-end'>
-        <Reveal width='100%'>
+        <Reveal width='100%' slideDirection='bottom'>
           <div className='relative w-full p-6'>
             <div className='absolute left-0 top-4 h-0.5 w-full bg-[linear-gradient(to_right,_transparent_0%,_var(--border)_9.27%,_var(--border)_90.7%,_transparent_100%)]'></div>
             <div className='absolute left-4 top-0 h-full w-0.5 bg-[linear-gradient(to_bottom,_transparent_0%,_var(--border)_9.27%,_var(--border)_90.7%,_transparent_100%)]'></div>
