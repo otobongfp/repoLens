@@ -6,22 +6,6 @@ import Navbar from '../../components/Navbar';
 export default function LearningDashboard() {
   return (
     <div className='bg-sidebar flex min-h-screen flex-col'>
-      {/* Background Effects */}
-      <div className='pointer-events-none absolute inset-0 -z-10'>
-        <div className='bg-primary absolute left-[-10%] top-[-10%] h-[400px] w-[400px] rounded-full opacity-20 blur-3xl filter' />
-        <div className='absolute bottom-[-10%] right-[-10%] h-[500px] w-[500px] rounded-full bg-blue-400 opacity-15 blur-2xl filter' />
-        <div className='absolute left-[60%] top-[30%] h-[300px] w-[300px] rounded-full bg-pink-300 opacity-15 blur-2xl filter' />
-      </div>
-
-      <Navbar>
-        <Link
-          href='/dashboard/select'
-          className='text-primary hover:text-primary/80 text-sm font-medium transition-colors'
-        >
-          ← Back to Features
-        </Link>
-      </Navbar>
-
       <main className='flex flex-1 flex-col items-center justify-center px-4 py-8'>
         {/* Coming Soon Content */}
         <div className='max-w-2xl text-center'>

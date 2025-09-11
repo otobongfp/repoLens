@@ -16,19 +16,6 @@ function AppContent() {
 
   return (
     <div className='bg-sidebar flex min-h-screen flex-col'>
-      <Navbar>
-        <button
-          className='text-primary focus:outline-hidden p-2 md:hidden'
-          onClick={() => setSidebarOpen((v: boolean) => !v)}
-          aria-label='Toggle sidebar'
-        >
-          <svg width='28' height='28' fill='none' viewBox='0 0 24 24'>
-            <rect y='4' width='24' height='2' rx='1' fill='currentColor' />
-            <rect y='11' width='24' height='2' rx='1' fill='currentColor' />
-            <rect y='18' width='24' height='2' rx='1' fill='currentColor' />
-          </svg>
-        </button>
-      </Navbar>
       <div className='bg-sidebar flex flex-1 overflow-hidden'>
         {/* Sidebar: hidden on mobile if toggled off */}
         <div
