@@ -8,7 +8,7 @@ export default function Navbar({ children }: { children?: React.ReactNode }) {
   const { isLocal } = useRepolensApi();
 
   return (
-    <nav className='border-border bg-background fixed z-50 flex w-full items-center justify-center border px-6 py-4 text-white'>
+    <nav className='border-border bg-background fixed z-50 flex h-16 w-full items-center justify-center border px-6 text-white'>
       <section className='flex w-full max-w-5xl items-center justify-between xl:max-w-[1200px]'>
         <Link href='/'>
           <span className='text-primary font-manrope mr-4 text-2xl font-bold tracking-tight'>
