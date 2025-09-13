@@ -1,46 +1,44 @@
-import React, { useState } from "react";
-import VisualizationTabs from "./VisualizationTabs";
-import AIAnalysisView from "./AIAnalysisView";
-import { useGraphData } from "../context/GraphDataProvider";
+import React, { useState } from 'react';
+import VisualizationTabs from './VisualizationTabs';
+import AIAnalysisView from './AIAnalysisView';
+import { useGraphData } from '../context/GraphDataProvider';
 
 export default function MainTabs() {
   const { graph } = useGraphData();
-  const [activeMode, setActiveMode] = useState<"visualization" | "ai-analysis">(
-    "visualization"
+  const [activeMode, setActiveMode] = useState<'visualization' | 'ai-analysis'>(
+    'visualization',
   );
 
   return (
-    <div className="w-full">
+    <div className='w-full'>
       {/* Main Mode Tabs */}
-      <div className="flex gap-2 mb-6 border-b border-white/10">
+      <div className='mb-6 flex gap-2 border-b border-white/10'>
         <button
-          className={`px-6 py-3 font-semibold rounded-t transition focus:outline-none
-            ${
-              activeMode === "visualization"
-                ? "border-b-4 border-primary text-primary bg-white/5"
-                : "text-white/80 hover:bg-white/10"
-            }`}
-          onClick={() => setActiveMode("visualization")}
+          className={`focus:outline-hidden rounded-t px-6 py-3 font-semibold transition ${
+            activeMode === 'visualization'
+              ? 'border-primary text-primary border-b-4 bg-white/5'
+              : 'text-white/80 hover:bg-white/10'
+          }`}
+          onClick={() => setActiveMode('visualization')}
         >
           📊 Visualization
         </button>
         <button
-          className={`px-6 py-3 font-semibold rounded-t transition focus:outline-none
-            ${
-              activeMode === "ai-analysis"
-                ? "border-b-4 border-primary text-primary bg-white/5"
-                : "text-white/80 hover:bg-white/10"
-            }`}
-          onClick={() => setActiveMode("ai-analysis")}
+          className={`focus:outline-hidden rounded-t px-6 py-3 font-semibold transition ${
+            activeMode === 'ai-analysis'
+              ? 'border-primary text-primary border-b-4 bg-white/5'
+              : 'text-white/80 hover:bg-white/10'
+          }`}
+          onClick={() => setActiveMode('ai-analysis')}
         >
           🤖 AI Analysis
         </button>
       </div>
 
       {/* Content */}
-      <div className="transition-opacity duration-300">
-        {activeMode === "visualization" && <VisualizationTabs />}
-        {activeMode === "ai-analysis" && <AIAnalysisView />}
+      <div className='transition-opacity duration-300'>
+        {activeMode === 'visualization' && <VisualizationTabs />}
+        {activeMode === 'ai-analysis' && <AIAnalysisView />}
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
-"use client";
-import React, { createContext, useContext, useEffect, useState } from "react";
+'use client';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 
 interface ApiContextType {
   apiBase: string;
@@ -7,20 +7,20 @@ interface ApiContextType {
 }
 
 const ApiContext = createContext<ApiContextType>({
-  apiBase: "http://localhost:3090",
+  apiBase: 'http://localhost:3090',
   isLocal: false,
 });
 
 export const ApiProvider = ({ children }: { children: React.ReactNode }) => {
-  const [apiBase, setApiBase] = useState("http://localhost:3090");
+  const [apiBase, setApiBase] = useState('http://localhost:3090');
   const [isLocal, setIsLocal] = useState(false);
 
   useEffect(() => {
     //try to connect to local agent
-    fetch("http://localhost:3090/status")
+    fetch('http://localhost:3090/status')
       .then((res) => {
         if (res.ok) {
-          setApiBase("http://localhost:3090");
+          setApiBase('http://localhost:3090');
           setIsLocal(true);
         } else {
           setIsLocal(false);

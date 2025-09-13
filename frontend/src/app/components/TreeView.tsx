@@ -1,30 +1,30 @@
-import React from "react";
-import { useGraphData } from "../context/GraphDataProvider";
+import React from 'react';
+import { useGraphData } from '../context/GraphDataProvider';
 
 function renderTree(graph: any) {
   // Group nodes by file
-  const files = graph.nodes.filter((n: any) => n.type === "file");
+  const files = graph.nodes.filter((n: any) => n.type === 'file');
   const childrenByFile: Record<string, any[]> = {};
   files.forEach((file: any) => {
     childrenByFile[file.id] = graph.nodes.filter(
       (n: any) =>
-        (n.type === "function" || n.type === "class") &&
+        (n.type === 'function' || n.type === 'class') &&
         graph.edges.some(
           (e: any) =>
-            e.from === file.id && e.to === n.id && e.type === "contains"
-        )
+            e.from === file.id && e.to === n.id && e.type === 'contains',
+        ),
     );
   });
   return (
-    <ul className="pl-4">
+    <ul className='pl-4'>
       {files.map((file: any) => (
-        <li key={file.id} className="mb-2">
-          <span className="font-bold text-primary">{file.label}</span>
-          <ul className="pl-4">
+        <li key={file.id} className='mb-2'>
+          <span className='text-primary font-bold'>{file.label}</span>
+          <ul className='pl-4'>
             {childrenByFile[file.id].map((child) => (
-              <li key={child.id} className="text-white/90">
-                {child.label}{" "}
-                <span className="text-xs text-white/50">({child.type})</span>
+              <li key={child.id} className='text-white/90'>
+                {child.label}{' '}
+                <span className='text-xs text-white/50'>({child.type})</span>
               </li>
             ))}
           </ul>
@@ -39,11 +39,11 @@ export default function TreeView() {
 
   if (!graph)
     return (
-      <div className="text-center text-lg text-primary py-16">No data</div>
+      <div className='text-primary py-16 text-center text-lg'>No data</div>
     );
   return (
-    <div className="py-4">
-      <h2 className="text-xl font-bold text-primary mb-4">
+    <div className='py-4'>
+      <h2 className='text-primary mb-4 text-xl font-bold'>
         Code Structure Tree
       </h2>
       {renderTree(graph)}

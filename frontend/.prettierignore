@@ -1,0 +1,5 @@
+.cache
+dist
+build
+*.json
+/documentation

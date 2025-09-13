@@ -1,5 +1,5 @@
-import { useApi } from "../context/ApiProvider";
-import { repositoryCache } from "./storage";
+import { useApi } from '../context/ApiProvider';
+import { repositoryCache } from './storage';
 
 export function useRepolensApi() {
   const { apiBase, isLocal } = useApi();
@@ -9,7 +9,7 @@ export function useRepolensApi() {
     if (folderPath) {
       const cached = await repositoryCache.get(folderPath);
       if (cached) {
-        console.log("Using cached repository analysis");
+        console.log('Using cached repository analysis');
         return { data: cached, fromCache: true };
       }
     }
@@ -20,20 +20,20 @@ export function useRepolensApi() {
       : `${apiBase}/analyze`;
 
     const res = await fetch(endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(folderPath ? { folder_path: folderPath } : { url }),
     });
-    if (!res.ok) throw new Error("Failed to analyze repo");
+    if (!res.ok) throw new Error('Failed to analyze repo');
     const data = await res.json();
 
     // Cache the result if we have a folder path
     if (folderPath) {
       try {
         await repositoryCache.set(folderPath, data);
-        console.log("Cached repository analysis");
+        console.log('Cached repository analysis');
       } catch (error) {
-        console.warn("Failed to cache repository analysis:", error);
+        console.warn('Failed to cache repository analysis:', error);
       }
     }
 
@@ -42,34 +42,34 @@ export function useRepolensApi() {
 
   async function getFiles() {
     const res = await fetch(`${apiBase}/files`);
-    if (!res.ok) throw new Error("Failed to get files");
+    if (!res.ok) throw new Error('Failed to get files');
     return await res.json();
   }
 
   async function getFile(path: string) {
     const res = await fetch(`${apiBase}/file?path=${encodeURIComponent(path)}`);
-    if (!res.ok) throw new Error("Failed to get file");
+    if (!res.ok) throw new Error('Failed to get file');
     return await res.json();
   }
 
   // AI endpoint (local FastAPI backend)
   async function askRepoQuestion(graph: any, question: string) {
-    const res = await fetch("http://localhost:8000/ai/ask", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+    const res = await fetch('http://localhost:8000/ai/ask', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ graph_data: graph, question }),
     });
-    if (!res.ok) throw new Error("Failed to get answer from AI");
+    if (!res.ok) throw new Error('Failed to get answer from AI');
     return await res.json();
   }
 
   async function fetchEnhancedGraph(folderPath: string) {
     const res = await fetch(`${apiBase}/analyze/enhanced`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ folder_path: folderPath }),
     });
-    if (!res.ok) throw new Error("Failed to fetch enhanced graph");
+    if (!res.ok) throw new Error('Failed to fetch enhanced graph');
     return await res.json();
   }
 

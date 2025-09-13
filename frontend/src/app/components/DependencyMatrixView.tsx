@@ -1,13 +1,13 @@
-import React from "react";
+import React from 'react';
 
-import { useGraphData } from "../context/GraphDataProvider";
+import { useGraphData } from '../context/GraphDataProvider';
 
 export default function DependencyMatrixView() {
   const { graph } = useGraphData();
   // Guard against invalid graph structure
   if (!graph || !Array.isArray(graph.nodes) || !Array.isArray(graph.edges)) {
     return (
-      <div className="text-center text-lg text-primary py-16">
+      <div className='text-primary py-16 text-center text-lg'>
         Invalid graph data
       </div>
     );
@@ -15,11 +15,11 @@ export default function DependencyMatrixView() {
 
   if (!graph)
     return (
-      <div className="text-center text-lg text-primary py-16">No data</div>
+      <div className='text-primary py-16 text-center text-lg'>No data</div>
     );
 
   // Get all files
-  const files = graph.nodes.filter((n: any) => n.type === "file");
+  const files = graph.nodes.filter((n: any) => n.type === 'file');
 
   // Build matrix: files x files, true if file A imports file B
   // Also, collect the edge for tooltip
@@ -28,37 +28,37 @@ export default function DependencyMatrixView() {
       // Find import edges from this file to the target file
       const importEdge = graph.edges.find(
         (e: any) =>
-          e.type === "imports" &&
+          e.type === 'imports' &&
           e.from === row.id &&
           e.to === col.id &&
-          e.meta?.local === true
+          e.meta?.local === true,
       );
 
       return importEdge || null;
-    })
+    }),
   );
 
   const hasAny = matrix.some((row: any) => row.some(Boolean));
 
   return (
-    <div className="py-4 overflow-auto">
-      <h2 className="text-xl font-bold text-primary mb-4">Dependency Matrix</h2>
+    <div className='overflow-auto py-4'>
+      <h2 className='text-primary mb-4 text-xl font-bold'>Dependency Matrix</h2>
       {!hasAny ? (
-        <div className="text-center text-white/70 py-8">
+        <div className='py-8 text-center text-white/70'>
           No file-to-file import dependencies found.
         </div>
       ) : (
-        <div className="overflow-auto max-w-full">
-          <table className="border-collapse min-w-max text-xs">
-            <thead className="sticky top-0 z-10">
+        <div className='max-w-full overflow-auto'>
+          <table className='min-w-max border-collapse text-xs'>
+            <thead className='sticky top-0 z-10'>
               <tr>
-                <th className="sticky left-0 z-20 bg-background border-b border-white/10 px-2 py-1 text-left font-bold">
+                <th className='bg-background sticky left-0 z-20 border-b border-white/10 px-2 py-1 text-left font-bold'>
                   File
                 </th>
                 {files.map((f: any) => (
                   <th
                     key={f.id}
-                    className="border-b border-white/10 px-2 py-1 text-white/70 bg-background whitespace-nowrap max-w-[120px] overflow-hidden text-ellipsis sticky top-0"
+                    className='bg-background sticky top-0 max-w-[120px] overflow-hidden text-ellipsis whitespace-nowrap border-b border-white/10 px-2 py-1 text-white/70'
                     title={f.path || f.label}
                   >
                     {f.label}
@@ -70,14 +70,14 @@ export default function DependencyMatrixView() {
               {files.map((row: any, i: number) => (
                 <tr key={row.id}>
                   <td
-                    className="sticky left-0 z-10 bg-background border-r border-white/10 px-2 py-1 font-bold text-primary whitespace-nowrap max-w-[120px] overflow-hidden text-ellipsis"
+                    className='bg-background text-primary sticky left-0 z-10 max-w-[120px] overflow-hidden text-ellipsis whitespace-nowrap border-r border-white/10 px-2 py-1 font-bold'
                     title={row.path || row.label}
                   >
                     {row.label}
                   </td>
                   {files.map((col: any, j: number) => {
                     const edge = matrix[i][j];
-                    let tooltip = "";
+                    let tooltip = '';
                     if (edge) {
                       tooltip = `From: ${row.path || row.label}\nTo: ${
                         col.path || col.label
@@ -89,14 +89,14 @@ export default function DependencyMatrixView() {
                     return (
                       <td
                         key={col.id}
-                        className={`px-2 py-1 text-center border border-white/10 transition-colors duration-150 ${
+                        className={`border border-white/10 px-2 py-1 text-center transition-colors duration-150 ${
                           edge
-                            ? "bg-primary/40 text-primary font-bold"
-                            : "bg-white/5 text-white/60"
+                            ? 'bg-primary/40 text-primary font-bold'
+                            : 'bg-white/5 text-white/60'
                         } hover:bg-primary/20`}
                         title={tooltip}
                       >
-                        {edge ? <span className="text-lg">●</span> : ""}
+                        {edge ? <span className='text-lg'>●</span> : ''}
                       </td>
                     );
                   })}
@@ -106,7 +106,7 @@ export default function DependencyMatrixView() {
           </table>
         </div>
       )}
-      <div className="mt-4 text-xs text-white/50">
+      <div className='mt-4 text-xs text-white/50'>
         ● = File imports dependency. Scroll to explore large matrices. Hover for
         details.
       </div>
