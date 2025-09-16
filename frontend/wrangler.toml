@@ -1,0 +1,8 @@
+name = "repolens-frontend"
+compatibility_date = "2024-09-16"
+
+[env.production]
+compatibility_flags = ["nodejs_compat"]
+
+[env.preview]
+compatibility_flags = ["nodejs_compat"]
