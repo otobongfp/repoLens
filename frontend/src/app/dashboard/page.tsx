@@ -1,5 +1,7 @@
 'use client';
 
+export const runtime = 'edge';
+
 import Navbar from '../components/Navbar';
 import RepoInput from '../components/RepoInput';
 import MainTabs from '../components/MainTabs';

@@ -1,5 +1,7 @@
 import Hero from './components/Hero';
 
+export const runtime = 'edge';
+
 export default function Home() {
   return (
     <div className='bg-background relative flex min-h-screen flex-col overflow-hidden'>

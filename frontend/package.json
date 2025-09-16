@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:cf": "npx @cloudflare/next-on-pages@latest",
     "start": "next start",
     "eslint:check": "tsc --noEmit && eslint --ext .js,.jsx,.ts,.tsx src",
     "eslint:fix": "eslint --fix --ext .js,.jsx,.ts,.tsx src",
