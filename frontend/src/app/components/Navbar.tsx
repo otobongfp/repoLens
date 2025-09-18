@@ -8,24 +8,33 @@ export default function Navbar({ children }: { children?: React.ReactNode }) {
   const { isLocal } = useRepolensApi();
 
   return (
-    <nav className='border-border bg-background fixed z-50 flex h-16 w-full items-center justify-center border px-6 text-white'>
+    <nav className='border-border bg-background fixed z-50 flex h-16 w-full items-center justify-center border px-4 text-white sm:px-6'>
       <section className='flex w-full max-w-5xl items-center justify-between xl:max-w-[1200px]'>
         <Link href='/'>
-          <span className='text-primary font-manrope mr-4 text-2xl font-bold tracking-tight'>
-            R<span className='text-lg'>EP</span>
-            <SearchCode className='mx-[1px] ml-[2px] inline' size={20} />L
-            <span className='text-lg'>ENS</span>
+          <span className='text-primary font-manrope mr-2 text-xl font-bold tracking-tight sm:mr-4 sm:text-2xl'>
+            R<span className='text-sm sm:text-lg'>EP</span>
+            <SearchCode className='mx-[1px] ml-[2px] inline' size={16} />L
+            <span className='text-sm sm:text-lg'>ENS</span>
           </span>
         </Link>
-        <section className='flex items-center gap-4'>
+        <section className='flex items-center gap-2 sm:gap-4'>
           <span
             className={
               isLocal
-                ? 'ml-4 rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-800'
-                : 'text-destructive ml-4 rounded-full bg-red-100 px-3 py-1 text-xs font-semibold'
+                ? 'ml-2 hidden rounded-full bg-green-100 px-2 py-1 text-xs font-semibold text-green-800 sm:ml-4 sm:block sm:px-3'
+                : 'text-destructive ml-2 hidden rounded-full bg-red-100 px-2 py-1 text-xs font-semibold sm:ml-4 sm:block sm:px-3'
             }
           >
             {isLocal ? 'Connected to Local Agent' : 'Agent Not Connected'}
+          </span>
+          <span
+            className={
+              isLocal
+                ? 'ml-2 rounded-full bg-green-100 px-2 py-1 text-xs font-semibold text-green-800 sm:ml-4 sm:hidden'
+                : 'text-destructive ml-2 rounded-full bg-red-100 px-2 py-1 text-xs font-semibold sm:ml-4 sm:hidden'
+            }
+          >
+            {isLocal ? 'Connected' : 'Not Connected'}
           </span>
           <ThemeToggle />
         </section>

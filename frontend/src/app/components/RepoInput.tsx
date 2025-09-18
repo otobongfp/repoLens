@@ -24,12 +24,12 @@ export default function RepoInput({ onAnalyze }: RepoInputProps = {}) {
 
   if (!isLocal) {
     return (
-      <div className='mb-6 w-full max-w-xl'>
+      <div className='mb-6 w-full max-w-xl px-4 sm:px-0'>
         <div className='rounded-sm border border-red-200 bg-red-50 p-4 text-center shadow-sm'>
-          <p className='font-semibold text-red-600'>
+          <p className='text-sm font-semibold text-red-600 sm:text-base'>
             RepoLens Agent Not Connected
           </p>
-          <p className='mt-2 text-sm text-red-500'>
+          <p className='mt-2 text-xs text-red-500 sm:text-sm'>
             Please start the RepoLens agent on port 3090 to analyze
             repositories.
           </p>
@@ -39,12 +39,12 @@ export default function RepoInput({ onAnalyze }: RepoInputProps = {}) {
   }
 
   return (
-    <div className='mb-6 w-full max-w-xl'>
+    <div className='mb-6 w-full max-w-xl px-4 sm:px-0'>
       <div className='mb-4 rounded-sm bg-white/70 p-4 text-center shadow-sm'>
-        <p className='text-primary font-semibold'>
+        <p className='text-primary text-sm font-semibold sm:text-base'>
           Connected to local RepoLens Agent
         </p>
-        <p className='mt-2 text-sm text-gray-700'>
+        <p className='mt-2 text-xs text-gray-700 sm:text-sm'>
           Select a folder to analyze your local repository.
         </p>
       </div>
@@ -56,7 +56,7 @@ export default function RepoInput({ onAnalyze }: RepoInputProps = {}) {
 
       {selectedFolder && (
         <div className='flex flex-col items-center gap-2'>
-          <div className='flex gap-2'>
+          <div className='flex w-full flex-col gap-2 sm:w-auto sm:flex-row'>
             <button
               onClick={async () => {
                 if (onAnalyze) {
@@ -77,7 +77,7 @@ export default function RepoInput({ onAnalyze }: RepoInputProps = {}) {
                   }
                 }
               }}
-              className='bg-primary hover:bg-primary/80 rounded-lg px-6 py-3 text-lg font-semibold text-white shadow-lg transition'
+              className='bg-primary hover:bg-primary/80 w-full rounded-lg px-4 py-2 text-sm font-semibold text-white shadow-lg transition sm:w-auto sm:px-6 sm:py-3 sm:text-lg'
             >
               {onAnalyze
                 ? 'Start Enhanced Analysis'
@@ -100,14 +100,14 @@ export default function RepoInput({ onAnalyze }: RepoInputProps = {}) {
                     setIsLoading(false);
                   }
                 }}
-                className='rounded-lg bg-orange-500 px-4 py-3 text-sm font-semibold text-white shadow-lg transition hover:bg-orange-600'
+                className='w-full rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white shadow-lg transition hover:bg-orange-600 sm:w-auto sm:py-3'
               >
                 Refresh Analysis
               </button>
             )}
           </div>
           {usingCache && (
-            <div className='rounded-full bg-green-50 px-3 py-1 text-sm text-green-600'>
+            <div className='rounded-full bg-green-50 px-3 py-1 text-xs text-green-600 sm:text-sm'>
               📦 Using cached data
             </div>
           )}
