@@ -11,6 +11,11 @@ export const metadata = {
   description: 'Improving opensource education with AI',
 };
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+};
+
 const geist = Geist({
   variable: '--font-geist',
   subsets: ['latin'],
@@ -51,8 +56,8 @@ export default function RootLayout({
           >
             <Navbar />
 
-            <div className='relative grid h-full grid-cols-[2.5rem_auto_2.5rem] xl:grid-cols-[auto_2rem_1200px_2rem_auto]'>
-              <div className='relative col-start-2 h-full w-full overflow-y-auto xl:col-start-3'>
+            <div className='relative grid h-full grid-cols-1 lg:grid-cols-[2.5rem_auto_2.5rem] xl:grid-cols-[auto_2rem_1200px_2rem_auto]'>
+              <div className='relative col-start-1 h-full w-full overflow-y-auto lg:col-start-2 xl:col-start-3'>
                 {children}
               </div>
 

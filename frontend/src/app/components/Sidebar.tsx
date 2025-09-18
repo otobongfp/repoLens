@@ -48,13 +48,37 @@ export default function Sidebar() {
 
   return (
     <aside className='bg-sidebar flex h-full w-80 min-w-[18rem] flex-col border-r border-white/10 p-4 shadow-xl transition-all duration-300'>
+      {/* Mobile close button */}
+      <button
+        className='bg-primary/90 absolute top-4 right-4 z-10 rounded-lg p-1 text-white md:hidden'
+        onClick={() => {
+          // This will be handled by the parent component
+          const event = new CustomEvent('closeSidebar');
+          window.dispatchEvent(event);
+        }}
+      >
+        <svg
+          className='h-4 w-4'
+          fill='none'
+          stroke='currentColor'
+          viewBox='0 0 24 24'
+        >
+          <path
+            strokeLinecap='round'
+            strokeLinejoin='round'
+            strokeWidth={2}
+            d='M6 18L18 6M6 6l12 12'
+          />
+        </svg>
+      </button>
+
       <h2 className='text-primary mb-2 text-lg font-bold'>Ask RepoLens AI</h2>
       <p className='mb-3 text-xs text-gray-400'>
         Ask about classes, functions, code structure, and implementation details
       </p>
       <form onSubmit={handleAsk} className='mb-4 flex flex-col gap-2'>
         <textarea
-          className='bg-background focus:outline-hidden focus:ring-primary h-20 resize-none rounded-sm border border-white/10 p-2 text-black focus:ring-2'
+          className='bg-background focus:ring-primary h-20 resize-none rounded-sm border border-white/10 p-2 text-black focus:ring-2 focus:outline-hidden'
           placeholder={
             !graph || !graph.nodes
               ? 'Please analyze a repository first...'

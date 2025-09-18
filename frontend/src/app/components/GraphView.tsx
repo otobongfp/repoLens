@@ -84,8 +84,10 @@ export default function GraphView({
     // Use full browser dimensions when in browser fullscreen, otherwise use container dimensions
     const width = browserFullscreen
       ? window.innerWidth
-      : Math.max(800, containerRect.width);
-    const height = browserFullscreen ? window.innerHeight : 600;
+      : Math.max(400, containerRect.width); // Reduced minimum width for mobile
+    const height = browserFullscreen
+      ? window.innerHeight
+      : Math.max(400, window.innerHeight * 0.6); // Responsive height
 
     svg.attr('width', width).attr('height', height);
 
@@ -343,17 +345,20 @@ export default function GraphView({
       {/* Container fullscreen button */}
       {setFullscreen && (
         <button
-          className='bg-primary hover:bg-primary/80 absolute right-4 top-4 z-10 rounded-full p-2 text-white shadow-lg transition'
+          className='bg-primary hover:bg-primary/80 absolute top-2 right-2 z-10 rounded-full p-1.5 text-xs text-white shadow-lg transition sm:top-4 sm:right-4 sm:p-2 sm:text-sm'
           onClick={() => setFullscreen(!fullscreen)}
           title='Toggle container fullscreen'
         >
-          {fullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+          <span className='hidden sm:inline'>
+            {fullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+          </span>
+          <span className='sm:hidden'>{fullscreen ? 'Exit' : 'Full'}</span>
         </button>
       )}
 
       {/* Browser fullscreen button */}
       <button
-        className='bg-primary absolute right-16 top-4 z-10 rounded-full p-2 text-white shadow-lg transition hover:bg-[#158452]'
+        className='bg-primary absolute top-2 right-12 z-10 rounded-full p-1.5 text-xs text-white shadow-lg transition hover:bg-[#158452] sm:top-4 sm:right-16 sm:p-2 sm:text-sm'
         onClick={
           browserFullscreen ? exitBrowserFullscreen : enterBrowserFullscreen
         }
@@ -363,31 +368,37 @@ export default function GraphView({
             : 'Enter browser fullscreen'
         }
       >
-        {browserFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+        <span className='hidden sm:inline'>
+          {browserFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+        </span>
+        <span className='sm:hidden'>{browserFullscreen ? 'Exit' : 'Full'}</span>
       </button>
 
       {/* Zoom controls */}
-      <div className='backdrop-blur-xs absolute left-4 top-4 z-10 flex items-center gap-2 rounded-lg bg-black/20 p-2'>
-        <span className='text-xs text-white/60'>
+      <div className='absolute top-2 left-2 z-10 flex items-center gap-1 rounded-lg bg-black/20 p-1.5 backdrop-blur-xs sm:top-4 sm:left-4 sm:gap-2 sm:p-2'>
+        <span className='hidden text-xs text-white/60 sm:inline'>
           Zoom: {Math.round(zoomLevel * 100)}%
+        </span>
+        <span className='text-xs text-white/60 sm:hidden'>
+          {Math.round(zoomLevel * 100)}%
         </span>
         <button
           onClick={zoomOut}
-          className='rounded-sm border border-white/20 bg-white/10 px-2 py-1 text-xs hover:bg-white/20'
+          className='rounded-sm border border-white/20 bg-white/10 px-1.5 py-1 text-xs hover:bg-white/20 sm:px-2'
           title='Zoom Out'
         >
           −
         </button>
         <button
           onClick={resetZoom}
-          className='rounded-sm border border-white/20 bg-white/10 px-2 py-1 text-xs hover:bg-white/20'
+          className='rounded-sm border border-white/20 bg-white/10 px-1.5 py-1 text-xs hover:bg-white/20 sm:px-2'
           title='Reset Zoom'
         >
           ⌂
         </button>
         <button
           onClick={zoomIn}
-          className='rounded-sm border border-white/20 bg-white/10 px-2 py-1 text-xs hover:bg-white/20'
+          className='rounded-sm border border-white/20 bg-white/10 px-1.5 py-1 text-xs hover:bg-white/20 sm:px-2'
           title='Zoom In'
         >
           +
@@ -398,7 +409,7 @@ export default function GraphView({
       <div
         ref={containerRef}
         className={`relative overflow-auto rounded border bg-white/5 shadow ${
-          fullscreen ? 'h-[90vh] w-full' : 'h-[600px] w-full'
+          fullscreen ? 'h-[90vh] w-full' : 'h-[400px] w-full sm:h-[600px]'
         } ${browserFullscreen ? 'h-full w-full' : ''}`}
       >
         <svg
@@ -409,8 +420,11 @@ export default function GraphView({
         />
 
         {/* Navigation hint overlay */}
-        <div className='absolute bottom-4 left-4 rounded-sm bg-black/20 px-2 py-1 text-xs text-white/40'>
-          Drag to pan • Scroll to zoom • Click nodes for details
+        <div className='absolute bottom-2 left-2 rounded-sm bg-black/20 px-2 py-1 text-xs text-white/40 sm:bottom-4 sm:left-4'>
+          <span className='hidden sm:inline'>
+            Drag to pan • Scroll to zoom • Click nodes for details
+          </span>
+          <span className='sm:hidden'>Drag • Scroll • Tap</span>
         </div>
       </div>
 

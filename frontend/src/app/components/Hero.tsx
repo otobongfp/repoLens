@@ -5,7 +5,7 @@ import { Reveal } from '@/components/Reveal';
 
 export default function Hero() {
   return (
-    <section className='mt-16 flex w-full flex-col items-center justify-center gap-8'>
+    <section className='mt-16 flex w-full flex-col items-center justify-center gap-6 px-4 sm:gap-8 sm:px-6'>
       <div className='hidden'>
         <Link
           href='#link'
@@ -28,23 +28,32 @@ export default function Hero() {
         </Link>
       </div>
 
-      <section className='relative flex h-96 w-full flex-col justify-end'>
+      <section className='relative flex h-96 w-full flex-col justify-end sm:h-[28rem]'>
         <Reveal width='100%' slideDirection='bottom'>
-          <div className='relative w-full p-6'>
-            <div className='absolute left-0 top-4 h-0.5 w-full bg-[linear-gradient(to_right,_transparent_0%,_var(--border)_9.27%,_var(--border)_90.7%,_transparent_100%)]'></div>
-            <div className='absolute left-4 top-0 h-full w-0.5 bg-[linear-gradient(to_bottom,_transparent_0%,_var(--border)_9.27%,_var(--border)_90.7%,_transparent_100%)]'></div>
-            <section className='relative flex h-36 flex-col items-center justify-center gap-2 bg-transparent py-24 text-center backdrop-blur-sm'>
-              <h1 className='text-foreground font-serif text-4xl font-extrabold md:text-5xl'>
-                Understand Any Codebase in Seconds
+          <div className='relative w-full p-4 sm:p-6'>
+            <div className='absolute top-4 left-0 h-0.5 w-full bg-[linear-gradient(to_right,_transparent_0%,_var(--border)_9.27%,_var(--border)_90.7%,_transparent_100%)]'></div>
+            <div className='absolute top-0 left-4 h-full w-0.5 bg-[linear-gradient(to_bottom,_transparent_0%,_var(--border)_9.27%,_var(--border)_90.7%,_transparent_100%)]'></div>
+            <section className='relative flex min-h-40 flex-col items-center justify-center gap-3 bg-transparent py-12 text-center backdrop-blur-sm sm:min-h-36 sm:py-24'>
+              <h1 className='text-foreground px-2 font-serif text-2xl leading-tight font-extrabold sm:px-4 sm:text-3xl md:text-4xl lg:text-5xl'>
+                <span className='block sm:inline'>Understand Any</span>
+                <span className='block sm:inline'> Codebase in Seconds</span>
               </h1>
 
-              <p className='text-muted-foreground text-md max-w-xl text-center'>
-                Paste a GitHub repo URL, visualize its structure, and ask AI
-                anything about the code. RepoLens makes onboarding and code
-                exploration effortless.
+              <p className='text-muted-foreground sm:text-md max-w-xl px-2 text-center text-xs leading-relaxed sm:px-4 sm:text-sm'>
+                <span className='block sm:inline'>
+                  Paste a GitHub repo URL, visualize its structure,
+                </span>
+                <span className='block sm:inline'>
+                  {' '}
+                  and ask AI anything about the code.
+                </span>
+                <span className='block sm:inline'>
+                  {' '}
+                  RepoLens makes onboarding effortless.
+                </span>
               </p>
               <div
-                className='mask-b-from-20% absolute -z-10 h-full w-full'
+                className='absolute -z-10 h-full w-full mask-b-from-20%'
                 style={{
                   backgroundColor: 'var(--background)',
                   background: `
@@ -58,7 +67,7 @@ export default function Hero() {
                 }}
               />
             </section>
-            <div className='absolute right-4 top-0 h-full w-0.5 bg-[linear-gradient(to_bottom,_transparent_0%,_var(--border)_9.27%,_var(--border)_90.7%,_transparent_100%)]'></div>
+            <div className='absolute top-0 right-4 h-full w-0.5 bg-[linear-gradient(to_bottom,_transparent_0%,_var(--border)_9.27%,_var(--border)_90.7%,_transparent_100%)]'></div>
             <div className='absolute bottom-4 left-0 h-px w-full bg-[linear-gradient(to_right,_transparent_0%,_var(--border)_9.27%,_var(--border)_90.7%,_transparent_100%)]'></div>
           </div>
         </Reveal>
@@ -67,30 +76,30 @@ export default function Hero() {
       <div className='flex items-center justify-center gap-4'>
         <Reveal delay={0.5}>
           <Link href='/dashboard/select' className='group'>
-            <CTAButton className='text-md font-medium capitalize'>
+            <CTAButton className='sm:text-md text-sm font-medium capitalize'>
               Get Started
             </CTAButton>
           </Link>
         </Reveal>
       </div>
 
-      <section className='isolate'>
+      <section className='isolate w-full'>
         <div className='relative overflow-hidden px-2'>
           <div
             aria-hidden
-            className='bg-linear-to-b to-background absolute inset-0 z-10 from-transparent from-35%'
+            className='to-background absolute inset-0 z-10 bg-linear-to-b from-transparent from-35%'
           />
           <Reveal delay={0.75}>
-            <div className='inset-shadow-2xs ring-background dark:inset-shadow-white/20 bg-background relative mx-auto max-w-6xl overflow-hidden rounded-2xl border p-1 shadow-lg shadow-zinc-950/15 ring-1'>
+            <div className='ring-background bg-background relative mx-auto max-w-6xl overflow-hidden rounded-2xl border p-1 shadow-lg ring-1 inset-shadow-2xs shadow-zinc-950/15 dark:inset-shadow-white/20'>
               <img
-                className='bg-background relative hidden rounded-[12px] dark:block'
+                className='bg-background relative hidden h-auto w-full rounded-[12px] dark:block'
                 src='/RepoLensDark.webp'
                 alt='app screen'
                 width='2700'
                 height='1440'
               />
               <img
-                className='z-2 border-border/25 relative rounded-[12px] border dark:hidden'
+                className='border-border/25 relative z-2 h-auto w-full rounded-[12px] border dark:hidden'
                 src='/RepoLensLight.webp'
                 alt='app screen'
                 width='2700'

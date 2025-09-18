@@ -177,6 +177,13 @@ body {
   overscroll-behavior: none;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
 }
 
 @layer base {
@@ -252,4 +259,31 @@ body {
     linear-gradient(black, black);
   mask-composite: exclude;
   -webkit-mask-composite: xor;
+}
+
+/* Mobile-specific improvements */
+@media (max-width: 768px) {
+  /* Improve touch targets */
+  button,
+  [role='button'] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Better scrolling on mobile */
+  .overflow-auto {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Prevent zoom on input focus */
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+
+  /* Improve modal positioning on mobile */
+  .fixed {
+    position: fixed;
+  }
 }

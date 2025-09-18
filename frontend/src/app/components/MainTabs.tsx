@@ -12,9 +12,9 @@ export default function MainTabs() {
   return (
     <div className='w-full'>
       {/* Main Mode Tabs */}
-      <div className='mb-6 flex gap-2 border-b border-white/10'>
+      <div className='mb-4 flex gap-1 overflow-x-auto border-b border-white/10 sm:mb-6 sm:gap-2'>
         <button
-          className={`focus:outline-hidden rounded-t px-6 py-3 font-semibold transition ${
+          className={`rounded-t px-3 py-2 text-sm font-semibold whitespace-nowrap transition focus:outline-hidden sm:px-6 sm:py-3 sm:text-base ${
             activeMode === 'visualization'
               ? 'border-primary text-primary border-b-4 bg-white/5'
               : 'text-white/80 hover:bg-white/10'
@@ -24,7 +24,7 @@ export default function MainTabs() {
           📊 Visualization
         </button>
         <button
-          className={`focus:outline-hidden rounded-t px-6 py-3 font-semibold transition ${
+          className={`rounded-t px-3 py-2 text-sm font-semibold whitespace-nowrap transition focus:outline-hidden sm:px-6 sm:py-3 sm:text-base ${
             activeMode === 'ai-analysis'
               ? 'border-primary text-primary border-b-4 bg-white/5'
               : 'text-white/80 hover:bg-white/10'
