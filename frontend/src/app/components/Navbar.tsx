@@ -4,7 +4,7 @@ import { useRepolensApi } from '../utils/api';
 import Link from 'next/link';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 
-export default function Navbar({ children }: { children?: React.ReactNode }) {
+export default function Navbar() {
   const { isLocal } = useRepolensApi();
 
   return (
