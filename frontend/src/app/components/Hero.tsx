@@ -28,13 +28,13 @@ export default function Hero() {
         </Link>
       </div>
 
-      <section className='relative flex h-96 w-full flex-col justify-end sm:h-[28rem]'>
+      <section className='relative flex h-80 w-full flex-col justify-end sm:h-[28rem]'>
         <Reveal width='100%' slideDirection='bottom'>
           <div className='relative w-full p-4 sm:p-6'>
-            <div className='absolute top-4 left-0 h-0.5 w-full bg-[linear-gradient(to_right,_transparent_0%,_var(--border)_9.27%,_var(--border)_90.7%,_transparent_100%)]'></div>
-            <div className='absolute top-0 left-4 h-full w-0.5 bg-[linear-gradient(to_bottom,_transparent_0%,_var(--border)_9.27%,_var(--border)_90.7%,_transparent_100%)]'></div>
+            <div className='absolute left-0 top-4 h-0.5 w-full bg-[linear-gradient(to_right,_transparent_0%,_var(--border)_9.27%,_var(--border)_90.7%,_transparent_100%)]'></div>
+            <div className='absolute left-4 top-0 h-full w-0.5 bg-[linear-gradient(to_bottom,_transparent_0%,_var(--border)_9.27%,_var(--border)_90.7%,_transparent_100%)]'></div>
             <section className='relative flex min-h-40 flex-col items-center justify-center gap-3 bg-transparent py-12 text-center backdrop-blur-sm sm:min-h-36 sm:py-24'>
-              <h1 className='text-foreground px-2 font-serif text-2xl leading-tight font-extrabold sm:px-4 sm:text-3xl md:text-4xl lg:text-5xl'>
+              <h1 className='text-foreground px-2 font-serif text-2xl font-extrabold leading-tight sm:px-4 sm:text-3xl md:text-4xl lg:text-5xl'>
                 <span className='block sm:inline'>Understand Any</span>
                 <span className='block sm:inline'> Codebase in Seconds</span>
               </h1>
@@ -53,7 +53,7 @@ export default function Hero() {
                 </span>
               </p>
               <div
-                className='absolute -z-10 h-full w-full mask-b-from-20%'
+                className='mask-b-from-20% absolute -z-10 h-full w-full'
                 style={{
                   backgroundColor: 'var(--background)',
                   background: `
@@ -67,7 +67,7 @@ export default function Hero() {
                 }}
               />
             </section>
-            <div className='absolute top-0 right-4 h-full w-0.5 bg-[linear-gradient(to_bottom,_transparent_0%,_var(--border)_9.27%,_var(--border)_90.7%,_transparent_100%)]'></div>
+            <div className='absolute right-4 top-0 h-full w-0.5 bg-[linear-gradient(to_bottom,_transparent_0%,_var(--border)_9.27%,_var(--border)_90.7%,_transparent_100%)]'></div>
             <div className='absolute bottom-4 left-0 h-px w-full bg-[linear-gradient(to_right,_transparent_0%,_var(--border)_9.27%,_var(--border)_90.7%,_transparent_100%)]'></div>
           </div>
         </Reveal>
@@ -83,14 +83,14 @@ export default function Hero() {
         </Reveal>
       </div>
 
-      <section className='isolate w-full'>
-        <div className='relative overflow-hidden px-2'>
+      <section className='relative isolate w-full md:hidden'>
+        <div className='absolute -right-24 overflow-hidden px-2'>
           <div
             aria-hidden
-            className='to-background absolute inset-0 z-10 bg-linear-to-b from-transparent from-35%'
+            className='to-background bg-linear-to-r absolute inset-0 z-10 from-transparent from-20%'
           />
           <Reveal delay={0.75}>
-            <div className='ring-background bg-background relative mx-auto max-w-6xl overflow-hidden rounded-2xl border p-1 shadow-lg ring-1 inset-shadow-2xs shadow-zinc-950/15 dark:inset-shadow-white/20'>
+            <div className='ring-background bg-background inset-shadow-2xs dark:inset-shadow-white/20 relative mx-auto max-w-6xl overflow-hidden rounded-2xl border p-1 shadow-lg shadow-zinc-950/15 ring-1'>
               <img
                 className='bg-background relative hidden h-auto w-full rounded-[12px] dark:block'
                 src='/RepoLensDark.webp'
@@ -99,7 +99,34 @@ export default function Hero() {
                 height='1440'
               />
               <img
-                className='border-border/25 relative z-2 h-auto w-full rounded-[12px] border dark:hidden'
+                className='border-border/25 z-2 relative h-auto w-full rounded-[12px] border dark:hidden'
+                src='/RepoLensLight.webp'
+                alt='app screen'
+                width='2700'
+                height='1440'
+              />
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      <section className='isolate hidden w-full md:block'>
+        <div className='relative overflow-hidden px-2'>
+          <div
+            aria-hidden
+            className='to-background bg-linear-to-b absolute inset-0 z-10 from-transparent from-35%'
+          />
+          <Reveal delay={0.75}>
+            <div className='ring-background bg-background inset-shadow-2xs dark:inset-shadow-white/20 relative mx-auto max-w-6xl overflow-hidden rounded-2xl border p-1 shadow-lg shadow-zinc-950/15 ring-1'>
+              <img
+                className='bg-background relative hidden h-auto w-full rounded-[12px] dark:block'
+                src='/RepoLensDark.webp'
+                alt='app screen'
+                width='2700'
+                height='1440'
+              />
+              <img
+                className='border-border/25 z-2 relative h-auto w-full rounded-[12px] border dark:hidden'
                 src='/RepoLensLight.webp'
                 alt='app screen'
                 width='2700'

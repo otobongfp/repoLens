@@ -16,6 +16,7 @@ export default function Navbar({ children }: { children?: React.ReactNode }) {
             <SearchCode className='mx-[1px] ml-[2px] inline' size={16} />L
             <span className='text-sm sm:text-lg'>ENS</span>
           </span>
+          <span className='sr-only'>Go to repolens homepage</span>
         </Link>
         <section className='flex items-center gap-2 sm:gap-4'>
           <span
