@@ -41,7 +41,7 @@ const features: FeatureCards[] = [
     title: 'Analyze Any Open-Source Repo',
     description:
       'Upload or link a GitHub repo to get instant structure and insights.',
-    icon: <CodeIcon className='text-primary' size={48} />,
+    icon: <CodeIcon className='text-primary' size={24} />,
     route: '/dashboard/analyze',
     color: 'chart-1',
     slideDirection: 'left',
@@ -51,7 +51,7 @@ const features: FeatureCards[] = [
     title: 'Dismember Repo into Components',
     description:
       'Break down repos into technologies, algorithms, and a linked learning graph.',
-    icon: <PuzzleIcon className='text-primary' size={48} />,
+    icon: <PuzzleIcon className='text-primary' size={24} />,
     route: '/dashboard/components',
     color: 'chart-2',
     slideDirection: 'right',
@@ -61,7 +61,7 @@ const features: FeatureCards[] = [
     title: 'Micro-Learning',
     description:
       'Pick a path, assess your knowledge, and follow a curated journey.',
-    icon: <BrainIcon className='text-primary' size={48} />,
+    icon: <BrainIcon className='text-primary' size={24} />,
     route: '/dashboard/learning',
     disabled: true,
     comingSoon: true,
@@ -72,7 +72,7 @@ const features: FeatureCards[] = [
     id: 'ai-assistant',
     title: 'Ask the RepoLens AI',
     description: 'Chat with RepoLens AI about the repo and its inner workings.',
-    icon: <BotIcon className='text-primary' size={48} />,
+    icon: <BotIcon className='text-primary' size={24} />,
     route: '/dashboard/ai-assistant',
     color: 'chart-4',
     slideDirection: 'right',
@@ -92,32 +92,32 @@ function FeatureCards({ feature }: { feature: FeatureCards }) {
     <div className='relative'>
       <Reveal width='100%' slideDirection={feature.slideDirection}>
         <FeatureCard
-          className={`bg-card/50 hover:bg-card/80 h-64 w-80 cursor-pointer rounded-2xl border border-white/10 p-0 shadow-xl backdrop-blur-2xl transition-all duration-300 ${
+          className={`bg-card/50 hover:bg-card/80 h-64 w-72 cursor-pointer rounded-3xl border border-white/10 p-0 shadow-xl backdrop-blur-2xl transition-all duration-300 lg:h-64 lg:w-96 ${
             feature.disabled
               ? 'cursor-not-allowed opacity-50'
               : 'hover:border-primary/30 hover:shadow-2xl'
           }`}
           onClick={handleClick}
         >
-          <FeatureCardContent className='relative h-full p-6'>
-            {/* Coming Soon Badge */}
+          <FeatureCardContent className='relative flex h-full flex-col justify-between p-4'>
             {feature.comingSoon && (
-              <FeatureCardAction>
-                <div className='absolute top-6 right-6 z-10 rounded-full bg-orange-500 px-3 py-1 text-xs font-semibold text-white'>
-                  Coming Soon
-                </div>
-              </FeatureCardAction>
+              <div className='absolute top-4 right-4 z-10 rounded-full bg-orange-500 px-3 py-1 text-xs font-semibold text-white'>
+                Coming Soon
+              </div>
             )}
 
-            <div className='mb-6'>{feature.icon}</div>
+            <section className='bg-accent/40 w-min rounded-[8px] p-2'>
+              {feature.icon}
+            </section>
 
-            <FeatureCardTitle className='text-primary text-md mb-3 font-bold'>
-              {feature.title}
-            </FeatureCardTitle>
-
-            <FeatureCardDescription className='text-muted-foreground text-sm leading-relaxed'>
-              {feature.description}
-            </FeatureCardDescription>
+            <section>
+              <FeatureCardTitle className='text-primary text-md mb-1 font-bold lg:text-xl'>
+                {feature.title}
+              </FeatureCardTitle>
+              <FeatureCardDescription className='text-muted-foreground text-xs leading-relaxed'>
+                {feature.description}
+              </FeatureCardDescription>
+            </section>
 
             {!feature.disabled && (
               <div className='from-primary/10 pointer-events-none absolute inset-0 rounded-2xl bg-linear-to-br to-transparent opacity-0 transition-opacity duration-300 hover:opacity-100' />
@@ -137,16 +137,15 @@ export default function FeatureSelectPage() {
         {/* Header */}
         <div className='mt-12 mb-12 text-center'>
           <Reveal width='100%' slideDirection='top'>
-            <h1 className='text-foreground mb-2 font-serif text-4xl font-bold tracking-tighter md:text-5xl'>
+            <h1 className='text-foreground mb-2 font-serif text-3xl font-bold tracking-tighter md:text-5xl'>
               Choose Your Path
             </h1>
-            <p className='text-muted-foreground text-md max-w-xl'>
+            <p className='text-muted-foreground max-w-xl text-xs md:text-base'>
               Select how you'd like to explore and understand code with RepoLens
             </p>
           </Reveal>
         </div>
 
-        {/* Feature Cards Grid */}
         <div className='relative'>
           <div className='grid grid-cols-1 gap-16 md:grid-cols-2'>
             {features.map((feature) => (
@@ -157,8 +156,7 @@ export default function FeatureSelectPage() {
           </div>
         </div>
 
-        {/* Footer */}
-        <div className='mt-16 text-center'>
+        <div className='mt-8 text-center'>
           <p className='text-sm text-gray-400'>
             Each tool is designed to help you understand code in different ways
           </p>
