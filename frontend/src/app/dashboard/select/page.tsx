@@ -103,7 +103,7 @@ function FeatureCards({ feature }: { feature: FeatureCards }) {
             {/* Coming Soon Badge */}
             {feature.comingSoon && (
               <FeatureCardAction>
-                <div className='absolute right-6 top-6 z-10 rounded-full bg-orange-500 px-3 py-1 text-xs font-semibold text-white'>
+                <div className='absolute top-6 right-6 z-10 rounded-full bg-orange-500 px-3 py-1 text-xs font-semibold text-white'>
                   Coming Soon
                 </div>
               </FeatureCardAction>
@@ -120,7 +120,7 @@ function FeatureCards({ feature }: { feature: FeatureCards }) {
             </FeatureCardDescription>
 
             {!feature.disabled && (
-              <div className='from-primary/10 bg-linear-to-br pointer-events-none absolute inset-0 rounded-2xl to-transparent opacity-0 transition-opacity duration-300 hover:opacity-100' />
+              <div className='from-primary/10 pointer-events-none absolute inset-0 rounded-2xl bg-linear-to-br to-transparent opacity-0 transition-opacity duration-300 hover:opacity-100' />
             )}
           </FeatureCardContent>
           <DotBackground className='mask-b-from-20%' />
@@ -135,7 +135,7 @@ export default function FeatureSelectPage() {
     <div className='bg-sidebar flex min-h-screen flex-col'>
       <main className='flex flex-1 flex-col items-center justify-center px-4 py-8'>
         {/* Header */}
-        <div className='mb-12 mt-12 text-center'>
+        <div className='mt-12 mb-12 text-center'>
           <Reveal width='100%' slideDirection='top'>
             <h1 className='text-foreground mb-2 font-serif text-4xl font-bold tracking-tighter md:text-5xl'>
               Choose Your Path
