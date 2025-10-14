@@ -2,13 +2,13 @@
 
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Navbar from '../../components/Navbar';
+import Navbar from '../components/Navbar';
 import {
   CodeIcon,
   PuzzleIcon,
   BrainIcon,
   BotIcon,
-} from '../../components/LucideIcons';
+} from '../components/LucideIcons';
 import {
   FeatureCard,
   FeatureCardContent,
@@ -45,12 +45,12 @@ const features: FeatureCards[] = [
     slideDirection: 'left',
   },
   {
-    id: 'components',
-    title: 'Dismember Repo into Components',
+    id: 'requirements',
+    title: 'Match Requirements to Codebase',
     description:
-      'Break down repos into technologies, algorithms, and a linked learning graph.',
+      'Analyze how well code meets specific requirements and outline gaps, timelines,resource planning, etc.',
     icon: <PuzzleIcon className='text-primary' size={24} />,
-    route: '/dashboard/components',
+    route: '/dashboard/requirements',
     color: 'chart-2',
     slideDirection: 'right',
   },
@@ -99,7 +99,7 @@ function FeatureCards({ feature }: { feature: FeatureCards }) {
         >
           <FeatureCardContent className='relative flex h-full flex-col justify-between p-4'>
             {feature.comingSoon && (
-              <div className='absolute right-4 top-4 z-10 rounded-full bg-orange-500 px-3 py-1 text-xs font-semibold text-white'>
+              <div className='absolute top-4 right-4 z-10 rounded-full bg-orange-500 px-3 py-1 text-xs font-semibold text-white'>
                 Coming Soon
               </div>
             )}
@@ -118,7 +118,7 @@ function FeatureCards({ feature }: { feature: FeatureCards }) {
             </section>
 
             {!feature.disabled && (
-              <div className='from-primary/10 bg-linear-to-br pointer-events-none absolute inset-0 rounded-2xl to-transparent opacity-0 transition-opacity duration-300 hover:opacity-100' />
+              <div className='from-primary/10 pointer-events-none absolute inset-0 rounded-2xl bg-linear-to-br to-transparent opacity-0 transition-opacity duration-300 hover:opacity-100' />
             )}
           </FeatureCardContent>
           <DotBackground className='mask-b-from-20%' />
@@ -132,7 +132,7 @@ export default function FeatureSelectPage() {
   return (
     <div className='bg-sidebar flex min-h-screen flex-col'>
       <main className='mt-16 flex flex-1 flex-col items-center justify-center px-4 py-4'>
-        <div className='mb-12 mt-12 text-center'>
+        <div className='mt-12 mb-12 text-center'>
           <Reveal width='100%' slideDirection='top'>
             <h1 className='text-foreground mb-2 font-serif text-3xl font-bold tracking-tighter md:text-5xl'>
               Choose Your Path

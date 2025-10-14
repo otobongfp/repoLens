@@ -110,12 +110,6 @@ export default function GraphView({
     // Create a set of valid node IDs for quick lookup
     const validNodeIds = new Set(nodes.map((n: any) => n.id));
 
-    console.log('Graph data:', {
-      nodes: graph.nodes.length,
-      edges: graph.edges.length,
-    });
-    console.log('Sample edges:', graph.edges.slice(0, 5));
-
     // Filter edges to only include those where both source and target nodes exist
     const links = graph.edges
       .filter((e: any) => {

@@ -3,36 +3,47 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 
 interface ApiContextType {
   apiBase: string;
-  isLocal: boolean;
+  useLocalBackend: boolean;
+  setUseLocalBackend: (use: boolean) => void;
 }
 
 const ApiContext = createContext<ApiContextType>({
-  apiBase: 'http://localhost:3090',
-  isLocal: false,
+  apiBase: 'https://api.repolens.org',
+  useLocalBackend: false,
+  setUseLocalBackend: () => {},
 });
 
 export const ApiProvider = ({ children }: { children: React.ReactNode }) => {
-  const [apiBase, setApiBase] = useState('http://localhost:3090');
-  const [isLocal, setIsLocal] = useState(false);
+  const [apiBase, setApiBase] = useState('https://api.repolens.org');
+  const [useLocalBackend, setUseLocalBackend] = useState(false);
 
+  // Load preference from localStorage on mount
   useEffect(() => {
-    //try to connect to local agent
-    fetch('http://localhost:3090/status')
-      .then((res) => {
-        if (res.ok) {
-          setApiBase('http://localhost:3090');
-          setIsLocal(true);
-        } else {
-          setIsLocal(false);
-        }
-      })
-      .catch(() => {
-        setIsLocal(false);
-      });
+    const savedPreference = localStorage.getItem('useLocalBackend');
+    if (savedPreference !== null) {
+      const useLocal = JSON.parse(savedPreference);
+      setUseLocalBackend(useLocal);
+      setApiBase(
+        useLocal ? 'http://localhost:8000' : 'https://api.repolens.org',
+      );
+    }
   }, []);
 
+  // Save preference to localStorage
+  const handleSetUseLocalBackend = (use: boolean) => {
+    setUseLocalBackend(use);
+    setApiBase(use ? 'http://localhost:8000' : 'https://api.repolens.org');
+    localStorage.setItem('useLocalBackend', JSON.stringify(use));
+  };
+
   return (
-    <ApiContext.Provider value={{ apiBase, isLocal }}>
+    <ApiContext.Provider
+      value={{
+        apiBase,
+        useLocalBackend,
+        setUseLocalBackend: handleSetUseLocalBackend,
+      }}
+    >
       {children}
     </ApiContext.Provider>
   );

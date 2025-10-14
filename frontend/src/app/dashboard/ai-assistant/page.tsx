@@ -1,71 +1,152 @@
 'use client';
 
-import Link from 'next/link';
-import Navbar from '../../components/Navbar';
-import { BotIcon } from '../../components/LucideIcons';
+import { useState } from 'react';
+import toast from 'react-hot-toast';
+import { useGraphData } from '../../context/GraphDataProvider';
+import { useRepolensApi } from '../../utils/api';
 
-export default function AIAssistantDashboard() {
+export default function AIAssistantPage() {
+  const { graph } = useGraphData();
+  const { askRepoQuestion } = useRepolensApi();
+  const [question, setQuestion] = useState('');
+  const [answer, setAnswer] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleAskQuestion = async () => {
+    if (!question.trim() || !graph) return;
+
+    setLoading(true);
+    setError('');
+    setAnswer('');
+
+    try {
+      const result = await askRepoQuestion(graph, question);
+      if (result.error) {
+        setError(result.error);
+        toast.error('Failed to get answer from AI');
+      } else {
+        setAnswer(result.answer);
+        toast.success('AI response received');
+      }
+    } catch (err) {
+      setError('Failed to get answer from AI');
+      toast.error('Failed to get answer from AI');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div className='bg-sidebar flex min-h-screen flex-col'>
-      <main className='flex flex-1 flex-col items-center justify-center px-4 py-8'>
-        {/* Coming Soon Content */}
-        <div className='max-w-3xl text-center'>
-          <div className='mb-6'>
-            <BotIcon className='text-primary mx-auto' size={64} />
-          </div>
-          <h1 className='mb-6 text-4xl font-bold text-white md:text-5xl'>
-            Ask the RepoLens AI
-          </h1>
-          <p className='mb-8 text-xl text-gray-300'>
-            Chat with RepoLens AI about repositories and get intelligent
-            insights
-          </p>
+    <div className='flex min-h-[60vh] flex-col items-center justify-center'>
+      {/* Header */}
+      <div className='mb-8 text-center'>
+        <h1 className='text-foreground mb-2 font-serif text-3xl font-bold tracking-tighter md:text-4xl'>
+          Ask RepoLens AI
+        </h1>
+        <p className='text-muted-foreground max-w-xl text-sm md:text-base'>
+          Chat with RepoLens AI about the repo and its inner workings
+        </p>
+      </div>
 
-          <div className='mb-8 rounded-xl border border-blue-500/20 bg-blue-500/10 p-6'>
-            <h2 className='mb-2 text-2xl font-semibold text-blue-400'>
-              AI-Powered Code Analysis
-            </h2>
-            <p className='mb-4 text-gray-300'>
-              This feature will allow you to have natural conversations with
-              RepoLens AI about any codebase. Ask questions, get explanations,
-              and receive intelligent insights about code structure, patterns,
-              and best practices.
+      {/* Chat Interface */}
+      <div className='w-full max-w-4xl'>
+        {!graph ? (
+          <div className='text-center'>
+            <div className='mb-4 text-6xl'>🤖</div>
+            <h3 className='text-foreground mb-2 text-xl font-semibold'>
+              No Repository Loaded
+            </h3>
+            <p className='text-muted-foreground text-sm'>
+              Please analyze a repository first to start asking questions
             </p>
-            <div className='space-y-2 text-left text-sm text-gray-300'>
-              <p>
-                • <strong>Natural Language Q&A:</strong> Ask questions about
-                code in plain English
-              </p>
-              <p>
-                • <strong>Code Explanation:</strong> Get detailed explanations
-                of functions, classes, and algorithms
-              </p>
-              <p>
-                • <strong>Best Practices:</strong> Receive suggestions for
-                improving code quality
-              </p>
-              <p>
-                • <strong>Security Analysis:</strong> Identify potential
-                security issues and vulnerabilities
-              </p>
-              <p>
-                • <strong>Refactoring Suggestions:</strong> Get AI-powered
-                recommendations for code improvements
-              </p>
+          </div>
+        ) : (
+          <div className='space-y-6'>
+            {/* Question Input */}
+            <div className='rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-md'>
+              <div className='mb-4'>
+                <label
+                  htmlFor='question'
+                  className='text-foreground mb-2 block text-sm font-medium'
+                >
+                  Ask a question about the codebase
+                </label>
+                <textarea
+                  id='question'
+                  value={question}
+                  onChange={(e) => setQuestion(e.target.value)}
+                  placeholder='e.g., How does the authentication system work? What are the main components of this application?'
+                  className='focus:border-primary w-full rounded-lg border border-white/10 bg-white/5 p-3 text-sm text-white placeholder-gray-400 focus:outline-none'
+                  rows={3}
+                />
+              </div>
+              <button
+                onClick={handleAskQuestion}
+                disabled={!question.trim() || loading}
+                className='bg-primary hover:bg-primary/80 rounded-lg px-6 py-2 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-50'
+              >
+                {loading ? 'Asking...' : 'Ask AI'}
+              </button>
+            </div>
+
+            {/* Answer Display */}
+            {(answer || error) && (
+              <div className='rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-md'>
+                <h3 className='text-foreground mb-4 text-lg font-semibold'>
+                  AI Response
+                </h3>
+                {error ? (
+                  <div className='rounded-lg border border-red-500/30 bg-red-500/10 p-4'>
+                    <p className='text-red-300'>{error}</p>
+                  </div>
+                ) : (
+                  <div className='prose prose-invert max-w-none'>
+                    <p className='whitespace-pre-wrap text-gray-300'>
+                      {answer}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Loading State */}
+            {loading && (
+              <div className='rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-md'>
+                <div className='flex items-center justify-center'>
+                  <div className='border-primary mr-3 h-6 w-6 animate-spin rounded-full border-b-2'></div>
+                  <p className='text-gray-400'>AI is thinking...</p>
+                </div>
+              </div>
+            )}
+
+            {/* Example Questions */}
+            <div className='rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-md'>
+              <h3 className='text-foreground mb-4 text-lg font-semibold'>
+                Example Questions
+              </h3>
+              <div className='grid grid-cols-1 gap-3 md:grid-cols-2'>
+                {[
+                  'What is the main architecture of this application?',
+                  'How does the authentication system work?',
+                  'What are the main dependencies and libraries used?',
+                  'How is data stored and retrieved?',
+                  'What are the main API endpoints?',
+                  'How does error handling work in this codebase?',
+                ].map((example, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setQuestion(example)}
+                    className='rounded-lg border border-white/10 bg-white/5 p-3 text-left text-sm text-gray-300 transition hover:bg-white/10'
+                  >
+                    {example}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
-
-          {/* Back to Features */}
-          <div className='mt-12'>
-            <Link
-              href='/dashboard/select'
-              className='bg-primary hover:bg-primary/80 inline-flex items-center rounded-lg px-6 py-3 font-semibold text-white transition-colors'
-            >
-              ← Back to Features
-            </Link>
-          </div>
-        </div>
-      </main>
+        )}
+      </div>
     </div>
   );
 }

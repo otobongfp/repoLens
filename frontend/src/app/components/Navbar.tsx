@@ -1,11 +1,11 @@
 'use client';
 import { SearchCode } from 'lucide-react';
-import { useRepolensApi } from '../utils/api';
+import { useApi } from '../context/ApiProvider';
 import Link from 'next/link';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 
 export default function Navbar() {
-  const { isLocal } = useRepolensApi();
+  const { useLocalBackend } = useApi();
 
   return (
     <nav className='border-border bg-background fixed z-50 flex h-16 w-full items-center justify-center border px-4 text-white sm:px-6'>
@@ -21,21 +21,21 @@ export default function Navbar() {
         <section className='flex items-center gap-2 sm:gap-4'>
           <span
             className={
-              isLocal
+              useLocalBackend
                 ? 'ml-2 hidden rounded-full bg-green-100 px-2 py-1 text-xs font-semibold text-green-800 sm:ml-4 sm:block sm:px-3'
                 : 'text-destructive ml-2 hidden rounded-full bg-red-100 px-2 py-1 text-xs font-semibold sm:ml-4 sm:block sm:px-3'
             }
           >
-            {isLocal ? 'Connected to Local Agent' : 'Agent Not Connected'}
+            {useLocalBackend ? 'Local Backend' : 'Cloud API'}
           </span>
           <span
             className={
-              isLocal
+              useLocalBackend
                 ? 'ml-2 rounded-full bg-green-100 px-2 py-1 text-xs font-semibold text-green-800 sm:ml-4 sm:hidden'
                 : 'text-destructive ml-2 rounded-full bg-red-100 px-2 py-1 text-xs font-semibold sm:ml-4 sm:hidden'
             }
           >
-            {isLocal ? 'Connected' : 'Not Connected'}
+            {useLocalBackend ? 'Local' : 'Cloud'}
           </span>
           <ThemeToggle />
         </section>

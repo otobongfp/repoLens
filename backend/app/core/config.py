@@ -1,18 +1,55 @@
+# Core configuration and settings
+from pydantic_settings import BaseSettings
+from typing import Optional
 import os
-from dotenv import load_dotenv
 
-
-load_dotenv()
-
-class Config:
+class Settings(BaseSettings):
+    """Application settings and configuration"""
+    
+    # API Configuration
+    app_name: str = "RepoLens API"
+    app_version: str = "2.0.0"
+    debug: Optional[str] = None
+    
     # OpenAI Configuration
-    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-    OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4")
-    AI_ANALYSIS_ENABLED = os.getenv("AI_ANALYSIS_ENABLED", "true").lower() == "true"
-    AI_MAX_TOKENS = int(os.getenv("AI_MAX_TOKENS", "4000"))
-    AI_TEMPERATURE = float(os.getenv("AI_TEMPERATURE", "0.1"))
-    DEBUG = os.getenv("DEBUG", "false").lower() == "true"
-    LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+    openai_api_key: Optional[str] = None
+    openai_model: str = "gpt-4"
+    openai_max_tokens: int = 4000
+    openai_temperature: float = 0.1
+    
+    # AI Analysis Configuration
+    ai_analysis_enabled: bool = True
+    ai_max_tokens: int = 4000
+    ai_temperature: float = 0.1
+    
+    # Logging
+    log_level: str = "INFO"
+    
+    # Repository Analysis
+    max_file_size: int = 10 * 1024 * 1024  # 10MB
+    supported_extensions: list = [
+        ".py", ".js", ".ts", ".jsx", ".tsx", 
+        ".java", ".cpp", ".c", ".cs", ".go", 
+        ".rs", ".php", ".rb", ".swift", ".kt"
+    ]
+    
+    # Rate Limiting
+    rate_limit_requests: int = 100
+    rate_limit_window: int = 60
+    
+    # CORS
+    cors_origins: list = [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "https://repolens.org",
+        "https://www.repolens.org",
+        "https://app.repolens.org"
+    ]
+    
+    class Config:
+        env_file = ".env"
+        case_sensitive = False
+        extra = "ignore"  # Ignore extra fields
 
-
-config = Config()
+# Global settings instance
+settings = Settings()

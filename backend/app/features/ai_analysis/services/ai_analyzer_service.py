@@ -2,7 +2,7 @@ import logging
 import re
 from typing import Dict, List, Any, Optional
 from openai import OpenAI
-from app.core.config import config
+from app.core.config import settings
 import os
 
 logger = logging.getLogger(__name__)
@@ -13,7 +13,7 @@ class AIAnalyzerService:
     def __init__(self):
         # Simple cache for analysis results
         self._analysis_cache = {}
-        if not config.OPENAI_API_KEY:
+        if not settings.openai_api_key:
             logger.warning("OpenAI API key not found. AI analysis will be disabled.")
             self.client = None
             self.enabled = False
@@ -21,14 +21,14 @@ class AIAnalyzerService:
             try:
                 # Try different initialization methods for compatibility
                 try:
-                    self.client = OpenAI(api_key=config.OPENAI_API_KEY)
+                    self.client = OpenAI(api_key=settings.openai_api_key)
                 except TypeError as e:
                     if "proxies" in str(e):
                         # Fallback for older versions
-                        self.client = OpenAI(api_key=config.OPENAI_API_KEY, http_client=None)
+                        self.client = OpenAI(api_key=settings.openai_api_key, http_client=None)
                     else:
                         raise e
-                self.enabled = config.AI_ANALYSIS_ENABLED
+                self.enabled = settings.ai_analysis_enabled
                 logger.info("OpenAI client initialized successfully")
             except Exception as e:
                 logger.error(f"Failed to initialize OpenAI client: {e}")

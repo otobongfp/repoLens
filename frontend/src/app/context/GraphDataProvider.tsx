@@ -41,31 +41,9 @@ export const GraphDataProvider = ({
   const [error, setError] = useState('');
   const [fromCache, setFromCache] = useState(false);
 
-  // Load the most recently analyzed repository on mount
-  useEffect(() => {
-    const loadLastRepository = async () => {
-      try {
-        const stats = await repositoryCache.getStats();
-        if (stats.count > 0) {
-          // Get the most recent cache entry
-          const recentEntry = await repositoryCache.getMostRecent();
-          if (recentEntry) {
-            setGraph(recentEntry.data);
-            setCurrentFolder(recentEntry.folderPath);
-            setFromCache(true);
-            console.log(
-              'Loaded previous repository from cache:',
-              recentEntry.folderPath,
-            );
-          }
-        }
-      } catch (error) {
-        console.error('Failed to load last repository:', error);
-      }
-    };
-
-    loadLastRepository();
-  }, []);
+  // No automatic cache loading on mount
+  // Users must explicitly select a folder to analyze
+  // This ensures clean state and prevents confusion
 
   const loadFromCache = async (folderPath: string): Promise<boolean> => {
     try {

@@ -14,43 +14,48 @@ export default function ComponentsDashboard() {
             <PuzzleIcon className='text-primary mx-auto' size={64} />
           </div>
           <h1 className='mb-6 text-4xl font-bold text-white md:text-5xl'>
-            Dismember Repo into Components
+            Match Requirements to Codebase
           </h1>
           <p className='mb-8 text-xl text-gray-300'>
-            Break down repositories into technologies, algorithms, and create a
-            linked learning graph
+            Analyze how well codebases meet specific requirements and provide
+            implementation estimates, timelines, and resource planning for
+            software development projects.
           </p>
 
           <div className='mb-8 rounded-xl border border-green-500/20 bg-green-500/10 p-6'>
             <h2 className='mb-2 text-2xl font-semibold text-green-400'>
-              Advanced Repository Analysis
+              Requirements-Codebase Matching Analysis
             </h2>
             <p className='mb-4 text-gray-300'>
-              This feature will provide deep analysis of codebases, breaking
-              them down into their fundamental components, identifying
-              technologies, algorithms, and creating interconnected learning
-              paths.
+              This feature provides intelligent analysis of how well existing
+              codebases align with specific requirements, enabling accurate
+              project estimation, timeline planning, and resource allocation for
+              software development projects.
             </p>
             <div className='space-y-2 text-left text-sm text-gray-300'>
               <p>
-                • <strong>Technology Stack Detection:</strong> Automatically
-                identify frameworks, libraries, and tools used
+                • <strong>Requirements Mapping:</strong> Match functional and
+                non-functional requirements to existing codebase components
               </p>
               <p>
-                • <strong>Algorithm Recognition:</strong> Detect and categorize
-                algorithms and data structures
+                • <strong>Implementation Estimation:</strong> Calculate effort
+                estimates based on codebase complexity and requirement scope
               </p>
               <p>
-                • <strong>Component Mapping:</strong> Map relationships between
-                different parts of the codebase
+                • <strong>Timeline Prediction:</strong> Generate realistic
+                project timelines using historical data and complexity analysis
               </p>
               <p>
-                • <strong>Learning Graph Generation:</strong> Create
-                interconnected learning paths based on dependencies
+                • <strong>Resource Planning:</strong> Identify required skills,
+                team size, and resource allocation for successful implementation
               </p>
               <p>
-                • <strong>Complexity Analysis:</strong> Identify complex areas
-                and suggest learning priorities
+                • <strong>Gap Analysis:</strong> Identify missing components and
+                suggest development priorities
+              </p>
+              <p>
+                • <strong>Risk Assessment:</strong> Evaluate potential
+                challenges and bottlenecks in implementation
               </p>
             </div>
           </div>

@@ -10,11 +10,18 @@ interface RepoInputProps {
 export default function RepoInput({ onAnalyze }: RepoInputProps = {}) {
   const [selectedFolder, setSelectedFolder] = useState('');
   const [usingCache, setUsingCache] = useState(false);
-  const { isLocal, analyzeRepo } = useRepolensApi();
-  const { setGraph, setIsLoading, setError, currentFolder, fromCache } =
-    useGraphData();
+  const { analyzeRepo, analyzeRepoFresh } = useRepolensApi();
+  const {
+    setGraph,
+    setIsLoading,
+    setError,
+    currentFolder,
+    fromCache,
+    setCurrentFolder,
+    clearGraph,
+    isLoading,
+  } = useGraphData();
 
-  // Update selected folder when current folder changes (from cache)
   useEffect(() => {
     if (currentFolder) {
       setSelectedFolder(currentFolder);
@@ -22,29 +29,20 @@ export default function RepoInput({ onAnalyze }: RepoInputProps = {}) {
     }
   }, [currentFolder, fromCache]);
 
-  if (!isLocal) {
-    return (
-      <div className='mb-6 w-full max-w-xl px-4 sm:px-0'>
-        <div className='rounded-sm border border-red-200 bg-red-50 p-4 text-center shadow-sm'>
-          <p className='text-sm font-semibold text-red-600 sm:text-base'>
-            RepoLens Agent Not Connected
-          </p>
-          <p className='mt-2 text-xs text-red-500 sm:text-sm'>
-            Please start the RepoLens agent on port 3090 to analyze
-            repositories.
-          </p>
-        </div>
-      </div>
-    );
-  }
+  useEffect(() => {
+    if (selectedFolder && selectedFolder !== currentFolder) {
+      setUsingCache(false);
+      setError('');
+    }
+  }, [selectedFolder, currentFolder]);
 
   return (
-    <div className='mb-6 w-full max-w-xl px-4 sm:px-0'>
-      <div className='mb-4 rounded-sm bg-white/70 p-4 text-center shadow-sm'>
+    <div className='w-full'>
+      <div className='mb-6 rounded-lg border border-white/10 bg-white/5 p-4 text-center backdrop-blur-sm'>
         <p className='text-primary text-sm font-semibold sm:text-base'>
-          Connected to local RepoLens Agent
+          Repository Analysis Ready
         </p>
-        <p className='mt-2 text-xs text-gray-700 sm:text-sm'>
+        <p className='text-muted-foreground mt-2 text-xs sm:text-sm'>
           Select a folder to analyze your local repository.
         </p>
       </div>
@@ -55,29 +53,35 @@ export default function RepoInput({ onAnalyze }: RepoInputProps = {}) {
       />
 
       {selectedFolder && (
-        <div className='flex flex-col items-center gap-2'>
-          <div className='flex w-full flex-col gap-2 sm:w-auto sm:flex-row'>
+        <div className='mt-6 flex flex-col items-center gap-4'>
+          <div className='flex w-full flex-col gap-3 sm:w-auto sm:flex-row'>
             <button
               onClick={async () => {
+                if (isLoading) {
+                  return;
+                }
+
                 if (onAnalyze) {
                   await onAnalyze(selectedFolder);
                 } else {
+                  clearGraph();
                   setIsLoading(true);
                   setError('');
-                  setGraph(null);
                   setUsingCache(false);
                   try {
-                    const result = await analyzeRepo('', selectedFolder);
+                    const result = await analyzeRepoFresh('', selectedFolder);
                     setGraph(result.data);
+                    setCurrentFolder(selectedFolder);
                     setUsingCache(result.fromCache);
                   } catch (err) {
+                    console.error('Analysis failed:', err);
                     setError('Failed to analyze folder.');
                   } finally {
                     setIsLoading(false);
                   }
                 }
               }}
-              className='bg-primary hover:bg-primary/80 w-full rounded-lg px-4 py-2 text-sm font-semibold text-white shadow-lg transition sm:w-auto sm:px-6 sm:py-3 sm:text-lg'
+              className='bg-primary hover:bg-primary/80 w-full rounded-lg px-6 py-3 text-sm font-semibold text-white shadow-lg transition sm:w-auto sm:text-base'
             >
               {onAnalyze
                 ? 'Start Enhanced Analysis'
@@ -86,13 +90,14 @@ export default function RepoInput({ onAnalyze }: RepoInputProps = {}) {
             {usingCache && (
               <button
                 onClick={async () => {
+                  clearGraph();
                   setIsLoading(true);
                   setError('');
-                  setGraph(null);
                   setUsingCache(false);
                   try {
-                    const result = await analyzeRepo('', selectedFolder);
+                    const result = await analyzeRepoFresh('', selectedFolder);
                     setGraph(result.data);
+                    setCurrentFolder(selectedFolder);
                     setUsingCache(result.fromCache);
                   } catch (err) {
                     setError('Failed to analyze folder.');
@@ -100,14 +105,14 @@ export default function RepoInput({ onAnalyze }: RepoInputProps = {}) {
                     setIsLoading(false);
                   }
                 }}
-                className='w-full rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white shadow-lg transition hover:bg-orange-600 sm:w-auto sm:py-3'
+                className='w-full rounded-lg bg-orange-500 px-6 py-3 text-sm font-semibold text-white shadow-lg transition hover:bg-orange-600 sm:w-auto sm:text-base'
               >
                 Refresh Analysis
               </button>
             )}
           </div>
           {usingCache && (
-            <div className='rounded-full bg-green-50 px-3 py-1 text-xs text-green-600 sm:text-sm'>
+            <div className='rounded-full border border-green-500/30 bg-green-500/20 px-4 py-2 text-xs text-green-300 sm:text-sm'>
               📦 Using cached data
             </div>
           )}
