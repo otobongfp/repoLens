@@ -1,3 +1,22 @@
+/**
+ * RepoLens Frontend - Layout
+ * 
+ * Copyright (C) 2024 RepoLens Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -19,6 +38,8 @@ import {
 } from '../components/LucideIcons';
 import { useRepolensApi } from '../utils/api';
 import { useApi } from '../context/ApiProvider';
+import ProtectedRoute from '../components/ProtectedRoute';
+import DashboardNavbar from '../components/DashboardNavbar';
 
 interface SidebarItem {
   id: string;
@@ -170,293 +191,267 @@ export default function DashboardLayout({
   };
 
   return (
-    <div className='bg-sidebar flex min-h-screen pt-16'>
-      {/* Mobile sidebar toggle */}
-      <button
-        className='bg-primary/90 text-primary-foreground fixed top-20 left-4 z-50 rounded-lg p-2 shadow-lg md:hidden'
-        onClick={() => setSidebarOpen(!sidebarOpen)}
-      >
-        {sidebarOpen ? (
-          <XIcon className='h-5 w-5' />
-        ) : (
-          <MenuIcon className='h-5 w-5' />
-        )}
-      </button>
-
-      {/* Sidebar overlay for mobile */}
-      {sidebarOpen && (
-        <div
-          className='fixed inset-0 z-40 bg-black/50 md:hidden'
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
-      {/* Desktop Sidebar - Fixed */}
-      <aside className='bg-card/50 border-border fixed top-16 left-0 hidden h-[calc(100vh-4rem)] w-64 flex-col border-r backdrop-blur-md md:flex'>
-        {/* Sidebar Header */}
-        <div className='border-border border-b p-6'>
-          <Link href='/select' className='flex items-center gap-3'>
-            <div className='bg-primary rounded-lg p-2'>
-              <CodeIcon className='text-primary-foreground h-6 w-6' />
-            </div>
-            <div>
-              <h2 className='text-card-foreground text-lg font-bold'>
-                RepoLens
-              </h2>
-              <p className='text-muted-foreground text-xs'>Dashboard</p>
-            </div>
-          </Link>
-        </div>
-
-        {/* Navigation Items */}
-        <nav className='flex-1 p-4'>
-          <ul className='space-y-2'>
-            {sidebarItems.map((item) => (
-              <li key={item.id}>
-                <Link
-                  href={item.disabled ? '#' : item.route}
-                  className={`group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                    pathname === item.route
-                      ? 'bg-primary text-primary-foreground'
-                      : item.disabled
-                        ? 'text-muted-foreground cursor-not-allowed opacity-50'
-                        : 'text-muted-foreground hover:text-card-foreground hover:bg-accent'
-                  }`}
-                  onClick={
-                    item.disabled ? (e) => e.preventDefault() : undefined
-                  }
-                >
-                  {item.icon}
-                  <span>{item.title}</span>
-                  {item.disabled && (
-                    <span className='text-primary-foreground ml-auto rounded-full bg-orange-500 px-2 py-0.5 text-xs'>
-                      Soon
-                    </span>
-                  )}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
-
-        {/* API Mode Toggle */}
-        <div className='border-border border-t p-4'>
-          <div className='text-muted-foreground mb-2 text-sm font-medium'>
-            API Mode
-          </div>
-          <div className='flex items-center gap-2'>
-            <button
-              onClick={() => setUseLocalBackend(!useLocalBackend)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                useLocalBackend ? 'bg-primary' : 'bg-gray-200'
-              }`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  useLocalBackend ? 'translate-x-6' : 'translate-x-1'
-                }`}
-              />
-            </button>
-            <span className='text-muted-foreground text-xs'>
-              {useLocalBackend ? 'Local Backend' : 'Cloud API'}
-            </span>
-          </div>
-          <div className='text-muted-foreground mt-1 text-xs'>
-            {useLocalBackend
-              ? 'Using local Python backend (port 8000)'
-              : 'Using cloud API'}
-          </div>
-        </div>
-
-        {/* Cache Manager */}
-        <div className='border-border border-t p-4'>
-          <button
-            onClick={() => setCacheExpanded(!cacheExpanded)}
-            className='text-muted-foreground hover:text-card-foreground flex w-full items-center justify-between text-sm transition-colors'
-          >
-            <div className='flex items-center gap-2'>
-              <DatabaseIcon className='h-4 w-4' />
-              <span>Cache Manager</span>
-            </div>
-            {cacheExpanded ? (
-              <ChevronUpIcon className='h-4 w-4' />
-            ) : (
-              <ChevronDownIcon className='h-4 w-4' />
-            )}
-          </button>
-
-          {cacheExpanded && (
-            <div className='mt-3 space-y-3'>
-              {cacheStats && (
-                <div className='text-muted-foreground text-xs'>
-                  <div>Cached repos: {cacheStats.count}</div>
-                  <div>Size: {formatBytes(cacheStats.size)}</div>
-                </div>
-              )}
-
-              <div className='flex gap-2'>
-                <button
-                  onClick={() => loadCacheStats(true)}
-                  className='bg-accent text-accent-foreground hover:bg-accent/80 rounded px-2 py-1 text-xs transition'
-                >
-                  Refresh
-                </button>
-                <button
-                  onClick={handleClearCache}
-                  disabled={cacheLoading}
-                  className='text-primary-foreground rounded bg-red-500/80 px-2 py-1 text-xs transition hover:bg-red-500 disabled:opacity-50'
-                >
-                  {cacheLoading ? 'Clearing...' : 'Clear'}
-                </button>
-              </div>
-
-              <div className='text-muted-foreground text-xs'>
-                Cache expires after 24 hours
-              </div>
-            </div>
+    <ProtectedRoute>
+      <DashboardNavbar />
+      <div className='bg-sidebar flex min-h-screen pt-16'>
+        {/* Mobile sidebar toggle */}
+        <button
+          className='bg-primary/90 text-primary-foreground fixed top-20 left-4 z-50 rounded-lg p-2 shadow-lg md:hidden'
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+        >
+          {sidebarOpen ? (
+            <XIcon className='h-5 w-5' />
+          ) : (
+            <MenuIcon className='h-5 w-5' />
           )}
-        </div>
+        </button>
 
-        {/* Sidebar Footer */}
-        <div className='border-border border-t p-4'>
-          <Link
-            href='/select'
-            className='text-muted-foreground hover:text-card-foreground flex items-center gap-2 text-sm transition-colors'
-          >
-            <span>← Back to Features</span>
-          </Link>
-        </div>
-      </aside>
-
-      {/* Mobile Sidebar Overlay */}
-      {sidebarOpen && (
-        <div className='fixed inset-0 z-40 md:hidden'>
+        {/* Sidebar overlay for mobile */}
+        {sidebarOpen && (
           <div
-            className='fixed inset-0 bg-black/50'
+            className='fixed inset-0 z-40 bg-black/50 md:hidden'
             onClick={() => setSidebarOpen(false)}
           />
-          <div className='bg-card/50 fixed top-0 left-0 h-full w-64 backdrop-blur-md'>
-            <div className='flex h-full flex-col'>
-              {/* Sidebar Header */}
-              <div className='border-border border-b p-6'>
-                <Link
-                  href='/select'
-                  className='flex items-center gap-3'
-                  onClick={() => setSidebarOpen(false)}
-                >
-                  <div className='bg-primary rounded-lg p-2'>
-                    <CodeIcon className='text-primary-foreground h-6 w-6' />
-                  </div>
-                  <div>
-                    <h2 className='text-card-foreground text-lg font-bold'>
-                      RepoLens
-                    </h2>
-                    <p className='text-muted-foreground text-xs'>Dashboard</p>
-                  </div>
-                </Link>
+        )}
+
+        {/* Desktop Sidebar - Fixed */}
+        <aside className='bg-card/50 border-border fixed top-16 left-0 hidden h-[calc(100vh-4rem)] w-64 flex-col border-r backdrop-blur-md md:flex'>
+          {/* Sidebar Header */}
+          <div className='border-border border-b p-6'>
+            <Link href='/select' className='flex items-center gap-3'>
+              <div className='bg-primary rounded-lg p-2'>
+                <CodeIcon className='text-primary-foreground h-6 w-6' />
               </div>
+              <div>
+                <h2 className='text-card-foreground text-lg font-bold'>
+                  RepoLens
+                </h2>
+                <p className='text-muted-foreground text-xs'>Dashboard</p>
+              </div>
+            </Link>
+          </div>
 
-              {/* Navigation Items */}
-              <nav className='flex-1 p-4'>
-                <ul className='space-y-2'>
-                  {sidebarItems.map((item) => (
-                    <li key={item.id}>
-                      <Link
-                        href={item.disabled ? '#' : item.route}
-                        className={`group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                          pathname === item.route
-                            ? 'bg-primary text-primary-foreground'
-                            : item.disabled
-                              ? 'text-muted-foreground cursor-not-allowed opacity-50'
-                              : 'text-muted-foreground hover:text-card-foreground hover:bg-accent'
-                        }`}
-                        onClick={
-                          item.disabled
-                            ? (e) => e.preventDefault()
-                            : () => setSidebarOpen(false)
-                        }
-                      >
-                        {item.icon}
-                        <span>{item.title}</span>
-                        {item.disabled && (
-                          <span className='text-primary-foreground ml-auto rounded-full bg-orange-500 px-2 py-0.5 text-xs'>
-                            Soon
-                          </span>
-                        )}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </nav>
-
-              {/* Cache Manager */}
-              <div className='border-border border-t p-4'>
-                <button
-                  onClick={() => setCacheExpanded(!cacheExpanded)}
-                  className='text-muted-foreground hover:text-card-foreground flex w-full items-center justify-between text-sm transition-colors'
-                >
-                  <div className='flex items-center gap-2'>
-                    <DatabaseIcon className='h-4 w-4' />
-                    <span>Cache Manager</span>
-                  </div>
-                  {cacheExpanded ? (
-                    <ChevronUpIcon className='h-4 w-4' />
-                  ) : (
-                    <ChevronDownIcon className='h-4 w-4' />
-                  )}
-                </button>
-
-                {cacheExpanded && (
-                  <div className='mt-3 space-y-3'>
-                    {cacheStats && (
-                      <div className='text-muted-foreground text-xs'>
-                        <div>Cached repos: {cacheStats.count}</div>
-                        <div>Size: {formatBytes(cacheStats.size)}</div>
-                      </div>
+          {/* Navigation Items */}
+          <nav className='flex-1 p-4'>
+            <ul className='space-y-2'>
+              {sidebarItems.map((item) => (
+                <li key={item.id}>
+                  <Link
+                    href={item.disabled ? '#' : item.route}
+                    className={`group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                      pathname === item.route
+                        ? 'bg-primary text-primary-foreground'
+                        : item.disabled
+                          ? 'text-muted-foreground cursor-not-allowed opacity-50'
+                          : 'text-muted-foreground hover:text-card-foreground hover:bg-accent'
+                    }`}
+                    onClick={
+                      item.disabled ? (e) => e.preventDefault() : undefined
+                    }
+                  >
+                    {item.icon}
+                    <span>{item.title}</span>
+                    {item.disabled && (
+                      <span className='text-primary-foreground ml-auto rounded-full bg-orange-500 px-2 py-0.5 text-xs'>
+                        Soon
+                      </span>
                     )}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
 
-                    <div className='flex gap-2'>
-                      <button
-                        onClick={() => loadCacheStats(true)}
-                        className='bg-accent text-accent-foreground hover:bg-accent/80 rounded px-2 py-1 text-xs transition'
-                      >
-                        Refresh
-                      </button>
-                      <button
-                        onClick={handleClearCache}
-                        disabled={cacheLoading}
-                        className='text-primary-foreground rounded bg-red-500/80 px-2 py-1 text-xs transition hover:bg-red-500 disabled:opacity-50'
-                      >
-                        {cacheLoading ? 'Clearing...' : 'Clear'}
-                      </button>
-                    </div>
+          {/* Cache Manager */}
+          <div className='border-border border-t p-4'>
+            <button
+              onClick={() => setCacheExpanded(!cacheExpanded)}
+              className='text-muted-foreground hover:text-card-foreground flex w-full items-center justify-between text-sm transition-colors'
+            >
+              <div className='flex items-center gap-2'>
+                <DatabaseIcon className='h-4 w-4' />
+                <span>Cache Manager</span>
+              </div>
+              {cacheExpanded ? (
+                <ChevronUpIcon className='h-4 w-4' />
+              ) : (
+                <ChevronDownIcon className='h-4 w-4' />
+              )}
+            </button>
 
-                    <div className='text-muted-foreground text-xs'>
-                      Cache expires after 24 hours
-                    </div>
+            {cacheExpanded && (
+              <div className='mt-3 space-y-3'>
+                {cacheStats && (
+                  <div className='text-muted-foreground text-xs'>
+                    <div>Cached repos: {cacheStats.count}</div>
+                    <div>Size: {formatBytes(cacheStats.size)}</div>
                   </div>
                 )}
-              </div>
 
-              {/* Sidebar Footer */}
-              <div className='border-border border-t p-4'>
-                <Link
-                  href='/select'
-                  className='text-muted-foreground hover:text-card-foreground flex items-center gap-2 text-sm transition-colors'
-                  onClick={() => setSidebarOpen(false)}
-                >
-                  <span>← Back to Features</span>
-                </Link>
+                <div className='flex gap-2'>
+                  <button
+                    onClick={() => loadCacheStats(true)}
+                    className='bg-accent text-accent-foreground hover:bg-accent/80 rounded px-2 py-1 text-xs transition'
+                  >
+                    Refresh
+                  </button>
+                  <button
+                    onClick={handleClearCache}
+                    disabled={cacheLoading}
+                    className='text-primary-foreground rounded bg-red-500/80 px-2 py-1 text-xs transition hover:bg-red-500 disabled:opacity-50'
+                  >
+                    {cacheLoading ? 'Clearing...' : 'Clear'}
+                  </button>
+                </div>
+
+                <div className='text-muted-foreground text-xs'>
+                  Cache expires after 24 hours
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Sidebar Footer */}
+          <div className='border-border border-t p-4'>
+            <Link
+              href='/select'
+              className='text-muted-foreground hover:text-card-foreground flex items-center gap-2 text-sm transition-colors'
+            >
+              <span>← Back to Features</span>
+            </Link>
+          </div>
+        </aside>
+
+        {/* Mobile Sidebar Overlay */}
+        {sidebarOpen && (
+          <div className='fixed inset-0 z-40 md:hidden'>
+            <div
+              className='fixed inset-0 bg-black/50'
+              onClick={() => setSidebarOpen(false)}
+            />
+            <div className='bg-card/50 fixed top-0 left-0 h-full w-64 backdrop-blur-md'>
+              <div className='flex h-full flex-col'>
+                {/* Sidebar Header */}
+                <div className='border-border border-b p-6'>
+                  <Link
+                    href='/select'
+                    className='flex items-center gap-3'
+                    onClick={() => setSidebarOpen(false)}
+                  >
+                    <div className='bg-primary rounded-lg p-2'>
+                      <CodeIcon className='text-primary-foreground h-6 w-6' />
+                    </div>
+                    <div>
+                      <h2 className='text-card-foreground text-lg font-bold'>
+                        RepoLens
+                      </h2>
+                      <p className='text-muted-foreground text-xs'>Dashboard</p>
+                    </div>
+                  </Link>
+                </div>
+
+                {/* Navigation Items */}
+                <nav className='flex-1 p-4'>
+                  <ul className='space-y-2'>
+                    {sidebarItems.map((item) => (
+                      <li key={item.id}>
+                        <Link
+                          href={item.disabled ? '#' : item.route}
+                          className={`group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                            pathname === item.route
+                              ? 'bg-primary text-primary-foreground'
+                              : item.disabled
+                                ? 'text-muted-foreground cursor-not-allowed opacity-50'
+                                : 'text-muted-foreground hover:text-card-foreground hover:bg-accent'
+                          }`}
+                          onClick={
+                            item.disabled
+                              ? (e) => e.preventDefault()
+                              : () => setSidebarOpen(false)
+                          }
+                        >
+                          {item.icon}
+                          <span>{item.title}</span>
+                          {item.disabled && (
+                            <span className='text-primary-foreground ml-auto rounded-full bg-orange-500 px-2 py-0.5 text-xs'>
+                              Soon
+                            </span>
+                          )}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </nav>
+
+                {/* Cache Manager */}
+                <div className='border-border border-t p-4'>
+                  <button
+                    onClick={() => setCacheExpanded(!cacheExpanded)}
+                    className='text-muted-foreground hover:text-card-foreground flex w-full items-center justify-between text-sm transition-colors'
+                  >
+                    <div className='flex items-center gap-2'>
+                      <DatabaseIcon className='h-4 w-4' />
+                      <span>Cache Manager</span>
+                    </div>
+                    {cacheExpanded ? (
+                      <ChevronUpIcon className='h-4 w-4' />
+                    ) : (
+                      <ChevronDownIcon className='h-4 w-4' />
+                    )}
+                  </button>
+
+                  {cacheExpanded && (
+                    <div className='mt-3 space-y-3'>
+                      {cacheStats && (
+                        <div className='text-muted-foreground text-xs'>
+                          <div>Cached repos: {cacheStats.count}</div>
+                          <div>Size: {formatBytes(cacheStats.size)}</div>
+                        </div>
+                      )}
+
+                      <div className='flex gap-2'>
+                        <button
+                          onClick={() => loadCacheStats(true)}
+                          className='bg-accent text-accent-foreground hover:bg-accent/80 rounded px-2 py-1 text-xs transition'
+                        >
+                          Refresh
+                        </button>
+                        <button
+                          onClick={handleClearCache}
+                          disabled={cacheLoading}
+                          className='text-primary-foreground rounded bg-red-500/80 px-2 py-1 text-xs transition hover:bg-red-500 disabled:opacity-50'
+                        >
+                          {cacheLoading ? 'Clearing...' : 'Clear'}
+                        </button>
+                      </div>
+
+                      <div className='text-muted-foreground text-xs'>
+                        Cache expires after 24 hours
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Sidebar Footer */}
+                <div className='border-border border-t p-4'>
+                  <Link
+                    href='/select'
+                    className='text-muted-foreground hover:text-card-foreground flex items-center gap-2 text-sm transition-colors'
+                    onClick={() => setSidebarOpen(false)}
+                  >
+                    <span>← Back to Features</span>
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Main Content - Scrollable */}
-      <main className='ml-0 flex flex-1 flex-col overflow-auto md:ml-64'>
-        <div className='flex-1 p-4 sm:p-6'>{children}</div>
-      </main>
-    </div>
+        {/* Main Content - Scrollable */}
+        <main className='ml-0 flex flex-1 flex-col overflow-auto md:ml-64'>
+          <div className='flex-1 p-4 sm:p-6'>{children}</div>
+        </main>
+      </div>
+    </ProtectedRoute>
   );
 }

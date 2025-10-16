@@ -1,3 +1,20 @@
+# RepoLens Service - Project_Service Business Logic
+#
+# Copyright (C) 2024 RepoLens Contributors
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 # Project Management Service
 import os
 import shutil
@@ -13,7 +30,11 @@ from ..shared.models.project_models import (
     ProjectResponse, ProjectCreateRequest, ProjectUpdateRequest,
     ProjectStatus, SourceType, SourceConfig, StorageConfig, EnvironmentConfig
 )
-from .neo4j_service import Neo4jService
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from app.database.models.tenant import Project, Tenant
+from app.database.models.user import User
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -123,33 +144,41 @@ class StorageManager:
 class ProjectService:
     """Project management service"""
     
-    def __init__(self, neo4j_service, storage_manager: StorageManager):
-        self.neo4j_service = neo4j_service
+    def __init__(self, storage_manager: StorageManager):
         self.storage_manager = storage_manager
+        self.db_url = os.getenv("PGVECTOR_DB_URL")
+        if not self.db_url:
+            raise ValueError("PGVECTOR_DB_URL environment variable is required")
     
-    def create_project(self, request: ProjectCreateRequest) -> ProjectResponse:
-        """Create a new project"""
+    async def create_project(self, request: ProjectCreateRequest, db: AsyncSession, user_id: str) -> ProjectResponse:
+        """Create a new project using SQLAlchemy"""
         try:
             project_id = str(uuid.uuid4())
             
             # Clone repository
             storage_info = self.storage_manager.clone_repository(project_id, request.source_config)
             
-            # Create project record
-            project_data = {
-                "project_id": project_id,
-                "name": request.name,
-                "description": request.description,
-                "source_config": request.source_config.dict(),
-                "status": ProjectStatus.READY,
-                "tenant_id": request.tenant_id,
-                "created_at": datetime.now(timezone.utc),
-                "updated_at": datetime.now(timezone.utc),
-                "storage_info": storage_info
-            }
+            # Create project record using SQLAlchemy
+            project = Project(
+                id=project_id,
+                name=request.name,
+                description=request.description,
+                source_type=request.source_config.type.value,
+                source_url=request.source_config.github_url or request.source_config.git_url,
+                source_path=request.source_config.local_path,
+                status=ProjectStatus.READY,
+                tenant_id=request.tenant_id,
+                owner_id=user_id,
+                file_count=storage_info.get("file_count", 0),
+                size_bytes=storage_info.get("size_bytes", 0),
+                analysis_count=0
+            )
             
-            # Store in Neo4j
-            self._store_project(project_data)
+            db.add(project)
+            await db.commit()
+            await db.refresh(project)
+            
+            logger.info(f"Created project {project_id} in database")
             
             return ProjectResponse(
                 project_id=project_id,
@@ -158,247 +187,208 @@ class ProjectService:
                 source_config=request.source_config,
                 status=ProjectStatus.READY,
                 tenant_id=request.tenant_id,
-                created_at=project_data["created_at"],
-                updated_at=project_data["updated_at"],
-                file_count=self._count_files(project_id, request.source_config),
-                size_bytes=storage_info.get("size_bytes")
+                created_at=project.created_at,
+                updated_at=project.updated_at,
+                file_count=storage_info.get("file_count", 0),
+                size_bytes=storage_info.get("size_bytes", 0)
             )
             
         except Exception as e:
             logger.error(f"Failed to create project: {e}")
+            await db.rollback()
             raise
     
-    def get_project(self, project_id: str, tenant_id: str) -> Optional[ProjectResponse]:
-        """Get project by ID"""
+    async def get_project(self, db: AsyncSession, project_id: str, tenant_id: str) -> Optional[ProjectResponse]:
+        """Get project by ID using SQLAlchemy"""
         try:
-            cypher = """
-            MATCH (p:Project {project_id: $project_id, tenant_id: $tenant_id})
-            RETURN p.project_id as project_id,
-                   p.name as name,
-                   p.description as description,
-                   p.source_config as source_config,
-                   p.status as status,
-                   p.tenant_id as tenant_id,
-                   p.created_at as created_at,
-                   p.updated_at as updated_at,
-                   p.last_analyzed as last_analyzed,
-                   p.analysis_count as analysis_count,
-                   p.file_count as file_count,
-                   p.size_bytes as size_bytes
-            """
+            result = await db.execute(
+                select(Project).where(Project.id == project_id, Project.tenant_id == tenant_id)
+            )
+            project_record = result.scalar_one_or_none()
             
-            with self.neo4j_service.driver.session() as session:
-                result = session.run(cypher, {
-                    'project_id': project_id,
-                    'tenant_id': tenant_id
-                })
+            if project_record:
+                # Reconstruct source_config from separate columns
+                source_config_data = {
+                    "type": project_record.source_type,
+                    "github_url": project_record.source_url if project_record.source_type == "github" else None,
+                    "git_url": project_record.source_url if project_record.source_type == "git" else None,
+                    "local_path": project_record.source_path if project_record.source_type == "local" else None
+                }
+                source_config = SourceConfig(**source_config_data)
                 
-                record = result.single()
-                if record:
-                    source_config = SourceConfig(**record['source_config'])
-                    return ProjectResponse(
-                        project_id=record['project_id'],
-                        name=record['name'],
-                        description=record['description'],
-                        source_config=source_config,
-                        status=ProjectStatus(record['status']),
-                        tenant_id=record['tenant_id'],
-                        created_at=record['created_at'],
-                        updated_at=record['updated_at'],
-                        last_analyzed=record['last_analyzed'],
-                        analysis_count=record['analysis_count'] or 0,
-                        file_count=record['file_count'],
-                        size_bytes=record['size_bytes']
-                    )
-                
-                return None
+                return ProjectResponse(
+                    project_id=str(project_record.id),
+                    name=project_record.name,
+                    description=project_record.description,
+                    source_config=source_config,
+                    status=ProjectStatus(project_record.status),
+                    tenant_id=str(project_record.tenant_id),
+                    created_at=project_record.created_at.isoformat() if project_record.created_at else None,
+                    updated_at=project_record.updated_at.isoformat() if project_record.updated_at else None,
+                    last_analyzed=project_record.last_analyzed_at.isoformat() if project_record.last_analyzed_at else None,
+                    analysis_count=project_record.analysis_count or 0,
+                    file_count=project_record.file_count,
+                    size_bytes=project_record.size_bytes
+                )
+            
+            return None
                 
         except Exception as e:
             logger.error(f"Failed to get project: {e}")
             return None
     
-    def list_projects(self, tenant_id: str, page: int = 1, page_size: int = 20) -> List[ProjectResponse]:
-        """List projects for tenant"""
+    async def list_projects(self, db: AsyncSession, tenant_id: str, page: int = 1, page_size: int = 20) -> Dict[str, Any]:
+        """List projects for tenant using SQLAlchemy"""
         try:
-            skip = (page - 1) * page_size
+            from sqlalchemy import func
             
-            cypher = """
-            MATCH (p:Project {tenant_id: $tenant_id})
-            RETURN p.project_id as project_id,
-                   p.name as name,
-                   p.description as description,
-                   p.source_config as source_config,
-                   p.status as status,
-                   p.tenant_id as tenant_id,
-                   p.created_at as created_at,
-                   p.updated_at as updated_at,
-                   p.last_analyzed as last_analyzed,
-                   p.analysis_count as analysis_count,
-                   p.file_count as file_count,
-                   p.size_bytes as size_bytes
-            ORDER BY p.updated_at DESC
-            SKIP $skip
-            LIMIT $limit
-            """
+            # Get total count
+            count_result = await db.execute(select(func.count(Project.id)).where(Project.tenant_id == tenant_id))
+            total = count_result.scalar()
             
-            with self.neo4j_service.driver.session() as session:
-                result = session.run(cypher, {
-                    'tenant_id': tenant_id,
-                    'skip': skip,
-                    'limit': page_size
-                })
+            # Get paginated projects
+            offset = (page - 1) * page_size
+            result = await db.execute(
+                select(Project)
+                .where(Project.tenant_id == tenant_id)
+                .order_by(Project.updated_at.desc())
+                .limit(page_size)
+                .offset(offset)
+            )
+            projects_records = result.scalars().all()
+            
+            projects = []
+            for project_record in projects_records:
+                # Reconstruct source_config from separate columns
+                source_config_data = {
+                    "type": project_record.source_type,
+                    "github_url": project_record.source_url if project_record.source_type == "github" else None,
+                    "git_url": project_record.source_url if project_record.source_type == "git" else None,
+                    "local_path": project_record.source_path if project_record.source_type == "local" else None
+                }
+                source_config = SourceConfig(**source_config_data)
                 
-                projects = []
-                for record in result:
-                    source_config = SourceConfig(**record['source_config'])
-                    project = ProjectResponse(
-                        project_id=record['project_id'],
-                        name=record['name'],
-                        description=record['description'],
-                        source_config=source_config,
-                        status=ProjectStatus(record['status']),
-                        tenant_id=record['tenant_id'],
-                        created_at=record['created_at'],
-                        updated_at=record['updated_at'],
-                        last_analyzed=record['last_analyzed'],
-                        analysis_count=record['analysis_count'] or 0,
-                        file_count=record['file_count'],
-                        size_bytes=record['size_bytes']
-                    )
-                    projects.append(project)
-                
-                return projects
+                project = ProjectResponse(
+                    project_id=str(project_record.id),
+                    name=project_record.name,
+                    description=project_record.description,
+                    source_config=source_config,
+                    status=ProjectStatus(project_record.status),
+                    tenant_id=str(project_record.tenant_id),
+                    created_at=project_record.created_at.isoformat() if project_record.created_at else None,
+                    updated_at=project_record.updated_at.isoformat() if project_record.updated_at else None,
+                    last_analyzed=project_record.last_analyzed_at.isoformat() if project_record.last_analyzed_at else None,
+                    analysis_count=project_record.analysis_count or 0,
+                    file_count=project_record.file_count,
+                    size_bytes=project_record.size_bytes
+                )
+                projects.append(project)
+            
+            return {
+                "projects": projects,
+                "total": total,
+                "page": page,
+                "page_size": page_size,
+                "total_pages": (total + page_size - 1) // page_size
+            }
                 
         except Exception as e:
             logger.error(f"Failed to list projects: {e}")
-            return []
+            return {"projects": [], "total": 0, "page": page, "page_size": page_size}
     
-    def update_project(self, project_id: str, tenant_id: str, request: ProjectUpdateRequest) -> Optional[ProjectResponse]:
-        """Update project"""
+    async def update_project(self, db: AsyncSession, project_id: str, tenant_id: str, request: ProjectUpdateRequest) -> Optional[ProjectResponse]:
+        """Update project using SQLAlchemy"""
         try:
-            update_fields = []
-            params = {'project_id': project_id, 'tenant_id': tenant_id}
+            result = await db.execute(
+                select(Project).where(Project.id == project_id, Project.tenant_id == tenant_id)
+            )
+            project_record = result.scalar_one_or_none()
             
+            if not project_record:
+                return None
+            
+            # Update fields
             if request.name:
-                update_fields.append("p.name = $name")
-                params['name'] = request.name
+                project_record.name = request.name
             
             if request.description is not None:
-                update_fields.append("p.description = $description")
-                params['description'] = request.description
+                project_record.description = request.description
             
             if request.source_config:
-                update_fields.append("p.source_config = $source_config")
-                params['source_config'] = request.source_config.dict()
+                project_record.source_type = request.source_config.type.value
+                project_record.source_url = request.source_config.github_url or request.source_config.git_url
+                project_record.source_path = request.source_config.local_path
             
-            if not update_fields:
-                return self.get_project(project_id, tenant_id)
+            project_record.updated_at = datetime.now(timezone.utc)
             
-            update_fields.append("p.updated_at = datetime()")
+            await db.commit()
+            await db.refresh(project_record)
             
-            cypher = f"""
-            MATCH (p:Project {{project_id: $project_id, tenant_id: $tenant_id}})
-            SET {', '.join(update_fields)}
-            RETURN p.project_id as project_id,
-                   p.name as name,
-                   p.description as description,
-                   p.source_config as source_config,
-                   p.status as status,
-                   p.tenant_id as tenant_id,
-                   p.created_at as created_at,
-                   p.updated_at as updated_at,
-                   p.last_analyzed as last_analyzed,
-                   p.analysis_count as analysis_count,
-                   p.file_count as file_count,
-                   p.size_bytes as size_bytes
-            """
+            # Reconstruct source_config from separate columns
+            source_config_data = {
+                "type": project_record.source_type,
+                "github_url": project_record.source_url if project_record.source_type == "github" else None,
+                "git_url": project_record.source_url if project_record.source_type == "git" else None,
+                "local_path": project_record.source_path if project_record.source_type == "local" else None
+            }
+            source_config = SourceConfig(**source_config_data)
             
-            with self.neo4j_service.driver.session() as session:
-                result = session.run(cypher, params)
-                record = result.single()
-                
-                if record:
-                    source_config = SourceConfig(**record['source_config'])
-                    return ProjectResponse(
-                        project_id=record['project_id'],
-                        name=record['name'],
-                        description=record['description'],
-                        source_config=source_config,
-                        status=ProjectStatus(record['status']),
-                        tenant_id=record['tenant_id'],
-                        created_at=record['created_at'],
-                        updated_at=record['updated_at'],
-                        last_analyzed=record['last_analyzed'],
-                        analysis_count=record['analysis_count'] or 0,
-                        file_count=record['file_count'],
-                        size_bytes=record['size_bytes']
-                    )
-                
-                return None
+            return ProjectResponse(
+                project_id=str(project_record.id),
+                name=project_record.name,
+                description=project_record.description,
+                source_config=source_config,
+                status=ProjectStatus(project_record.status),
+                tenant_id=str(project_record.tenant_id),
+                created_at=project_record.created_at.isoformat() if project_record.created_at else None,
+                updated_at=project_record.updated_at.isoformat() if project_record.updated_at else None,
+                last_analyzed=project_record.last_analyzed_at.isoformat() if project_record.last_analyzed_at else None,
+                analysis_count=project_record.analysis_count or 0,
+                file_count=project_record.file_count,
+                size_bytes=project_record.size_bytes
+            )
                 
         except Exception as e:
             logger.error(f"Failed to update project: {e}")
+            await db.rollback()
             return None
     
-    def delete_project(self, project_id: str, tenant_id: str) -> bool:
-        """Delete project"""
+    async def delete_project(self, db: AsyncSession, project_id: str, tenant_id: str) -> bool:
+        """Delete project using SQLAlchemy"""
         try:
             # Get project info first
-            project = self.get_project(project_id, tenant_id)
-            if not project:
+            result = await db.execute(
+                select(Project).where(Project.id == project_id, Project.tenant_id == tenant_id)
+            )
+            project_record = result.scalar_one_or_none()
+            
+            if not project_record:
                 return False
             
+            # Reconstruct source_config for storage deletion
+            source_config_data = {
+                "type": project_record.source_type,
+                "github_url": project_record.source_url if project_record.source_type == "github" else None,
+                "git_url": project_record.source_url if project_record.source_type == "git" else None,
+                "local_path": project_record.source_path if project_record.source_type == "local" else None
+            }
+            source_config = SourceConfig(**source_config_data)
+            
             # Delete from storage
-            self._delete_project_storage(project_id, project.source_config)
+            self._delete_project_storage(project_id, source_config)
             
-            # Delete from Neo4j
-            cypher = """
-            MATCH (p:Project {project_id: $project_id, tenant_id: $tenant_id})
-            DETACH DELETE p
-            """
+            # Delete from database
+            await db.delete(project_record)
+            await db.commit()
             
-            with self.neo4j_service.driver.session() as session:
-                session.run(cypher, {
-                    'project_id': project_id,
-                    'tenant_id': tenant_id
-                })
-            
+            logger.info(f"Deleted project {project_id} from database")
             return True
             
         except Exception as e:
             logger.error(f"Failed to delete project: {e}")
+            await db.rollback()
             return False
     
-    def _store_project(self, project_data: Dict[str, Any]):
-        """Store project in Neo4j"""
-        cypher = """
-        CREATE (p:Project {
-            project_id: $project_id,
-            name: $name,
-            description: $description,
-            source_config: $source_config,
-            status: $status,
-            tenant_id: $tenant_id,
-            created_at: datetime(),
-            updated_at: datetime(),
-            analysis_count: 0,
-            file_count: 0,
-            size_bytes: 0
-        })
-        
-        MERGE (t:Tenant {tenant_id: $tenant_id})
-        MERGE (t)-[:OWNS]->(p)
-        """
-        
-        with self.neo4j_service.driver.session() as session:
-            session.run(cypher, {
-                'project_id': project_data['project_id'],
-                'name': project_data['name'],
-                'description': project_data['description'],
-                'source_config': project_data['source_config'],
-                'status': project_data['status'].value,
-                'tenant_id': project_data['tenant_id']
-            })
     
     def _delete_project_storage(self, project_id: str, source_config: SourceConfig):
         """Delete project from local workspace"""

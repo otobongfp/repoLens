@@ -1,3 +1,22 @@
+/**
+ * RepoLens Frontend - Projectcreationmodal Component
+ * 
+ * Copyright (C) 2024 RepoLens Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 'use client';
 
 import { useState } from 'react';
@@ -83,7 +102,7 @@ export default function ProjectCreationModal({
       const projectData: ProjectCreateRequest = {
         name: formData.name,
         description: formData.description || undefined,
-        tenant_id: 'tenant_123', // TODO: Get from context
+        tenant_id: 'bb84125f-736d-450d-aa5a-922cc44181ba', // TODO: Get from auth context
         source_config: {
           type: sourceType,
           ...(sourceType === 'local' && { local_path: formData.local_path }),

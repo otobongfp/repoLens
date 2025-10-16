@@ -1,3 +1,22 @@
+/**
+ * RepoLens Frontend - Projectssidebar Component
+ * 
+ * Copyright (C) 2024 RepoLens Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -170,7 +189,7 @@ export default function ProjectsSidebar({
     <aside className='bg-sidebar flex h-full w-80 min-w-[18rem] flex-col border-r border-white/10 p-4 shadow-xl'>
       {/* Header */}
       <div className='mb-4'>
-        <h2 className='text-primary mb-2 text-lg font-bold'>📁 Projects</h2>
+        <h2 className='text-primary mb-2 text-lg font-bold'>Projects</h2>
         <button
           onClick={onCreateProject}
           className='bg-primary hover:bg-primary/80 text-primary-foreground flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2 font-semibold transition'

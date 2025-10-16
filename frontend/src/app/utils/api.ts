@@ -1,5 +1,38 @@
+/**
+ * RepoLens Frontend - Api Utilities
+ * 
+ * Copyright (C) 2024 RepoLens Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 import { useApi } from '../context/ApiProvider';
 import { repositoryCache } from './storage';
+
+// Helper function to get auth headers
+function getAuthHeaders(): HeadersInit {
+  const token = localStorage.getItem('access_token');
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+  };
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  return headers;
+}
 
 // Project Management Types
 export interface SourceConfig {
@@ -181,9 +214,9 @@ export function useRepolensApi() {
   async function createProject(
     projectData: ProjectCreateRequest,
   ): Promise<Project> {
-    const res = await fetch(`${apiBase}/projects`, {
+    const res = await fetch(`${apiBase}/api/v1/projects`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders(),
       body: JSON.stringify(projectData),
     });
     if (!res.ok) throw new Error('Failed to create project');
@@ -200,14 +233,19 @@ export function useRepolensApi() {
     page_size: number;
   }> {
     const res = await fetch(
-      `${apiBase}/projects?page=${page}&page_size=${pageSize}`,
+      `${apiBase}/api/v1/projects?page=${page}&page_size=${pageSize}`,
+      {
+        headers: getAuthHeaders(),
+      },
     );
     if (!res.ok) throw new Error('Failed to get projects');
     return await res.json();
   }
 
   async function getProject(projectId: string): Promise<Project> {
-    const res = await fetch(`${apiBase}/projects/${projectId}`);
+    const res = await fetch(`${apiBase}/api/v1/projects/${projectId}`, {
+      headers: getAuthHeaders(),
+    });
     if (!res.ok) throw new Error('Failed to get project');
     return await res.json();
   }
@@ -216,9 +254,9 @@ export function useRepolensApi() {
     projectId: string,
     projectData: Partial<ProjectCreateRequest>,
   ): Promise<Project> {
-    const res = await fetch(`${apiBase}/projects/${projectId}`, {
+    const res = await fetch(`${apiBase}/api/v1/projects/${projectId}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders(),
       body: JSON.stringify(projectData),
     });
     if (!res.ok) throw new Error('Failed to update project');
@@ -226,8 +264,9 @@ export function useRepolensApi() {
   }
 
   async function deleteProject(projectId: string): Promise<void> {
-    const res = await fetch(`${apiBase}/projects/${projectId}`, {
+    const res = await fetch(`${apiBase}/api/v1/projects/${projectId}`, {
       method: 'DELETE',
+      headers: getAuthHeaders(),
     });
     if (!res.ok) throw new Error('Failed to delete project');
   }
@@ -243,7 +282,7 @@ export function useRepolensApi() {
     started_at: string;
     progress: any;
   }> {
-    const res = await fetch(`${apiBase}/projects/${projectId}/analyze`, {
+    const res = await fetch(`${apiBase}/api/v1/projects/${projectId}/analyze`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -260,7 +299,7 @@ export function useRepolensApi() {
   async function getProjectAnalyses(
     projectId: string,
   ): Promise<{ analyses: any[]; total: number }> {
-    const res = await fetch(`${apiBase}/projects/${projectId}/analyses`);
+    const res = await fetch(`${apiBase}/api/v1/projects/${projectId}/analyses`);
     if (!res.ok) throw new Error('Failed to get project analyses');
     return await res.json();
   }

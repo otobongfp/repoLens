@@ -1,5 +1,20 @@
 # RepoLens API
 # Production FastAPI application with multi-tenant SaaS architecture
+#
+# Copyright (C) 2024 RepoLens Contributors
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from fastapi import FastAPI, HTTPException, Depends, status, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,6 +28,10 @@ from datetime import datetime, timezone
 import uuid
 import jwt
 from contextlib import asynccontextmanager
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # Import services
 from app.services.neo4j_service import Neo4jService, GraphService
@@ -25,7 +44,9 @@ from app.services.action_service import ActionService
 from app.services.audit_service import AuditService
 
 # Import API routers
-from app.api.v1 import ai, repository, health, repositories, requirements, action_proposals, security, admin, projects, settings
+from app.api.v1 import ai, repository, health, repositories, requirements, action_proposals, security, admin, projects, settings, auth
+from app.core.config import settings as app_settings
+from app.services.session_manager import session_manager
 
 # Configure logging
 logging.basicConfig(
@@ -35,7 +56,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Security
-security = HTTPBearer()
+security_scheme = HTTPBearer()
 
 # Enums
 class Plan(str, Enum):
@@ -146,6 +167,13 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("Starting RepoLens API")
     
+    # Connect to Redis
+    try:
+        await session_manager.connect()
+        logger.info("Redis session manager connected")
+    except Exception as e:
+        logger.error(f"Failed to connect to Redis: {e}")
+    
     # Create default tenant
     default_tenant = Tenant(
         tenant_id="tenant_123",
@@ -153,12 +181,22 @@ async def lifespan(app: FastAPI):
         plan=Plan.PRO,
         billing_contact="admin@example.com"
     )
-    await db.create_tenant(default_tenant)
+    
+    # Get database service and create default tenant
+    db_service = await get_db()
+    await db_service.create_tenant(default_tenant)
     
     yield
     
     # Shutdown
     logger.info("Shutting down RepoLens API")
+    
+    # Disconnect from Redis
+    try:
+        await session_manager.disconnect()
+        logger.info("Redis session manager disconnected")
+    except Exception as e:
+        logger.error(f"Error disconnecting from Redis: {e}")
 
 app = FastAPI(
     title="RepoLens API",
@@ -170,13 +208,14 @@ app = FastAPI(
 # CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure for production
+    allow_origins=app_settings.cors_origins,  # Use configured origins
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
 # Include API routers
+app.include_router(auth.router, prefix="/api/v1")
 app.include_router(ai.router, prefix="/api/v1")
 app.include_router(repository.router, prefix="/api/v1")
 app.include_router(health.router, prefix="/api/v1")

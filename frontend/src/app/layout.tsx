@@ -1,10 +1,28 @@
-import { subset } from 'd3';
+/**
+ * RepoLens Frontend - Main Layout Component
+ *
+ * Copyright (C) 2024 RepoLens Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 import '../../styles/globals.css';
-import Navbar from './components/Navbar';
+import ConditionalNavbar from './components/ConditionalNavbar';
 import { ApiProvider } from './context/ApiProvider';
 import { GraphDataProvider } from './context/GraphDataProvider';
+import { AuthProvider } from './context/AuthProvider';
 import { Geist, Geist_Mono, Manrope, Merriweather } from 'next/font/google';
-import DotBackground from '@/components/DotBackground';
 import { ThemeProvider } from '@/components/theme/ThemeProvider';
 import { Toaster } from 'react-hot-toast';
 
@@ -50,42 +68,44 @@ export default function RootLayout({
         className={`${geist.variable} ${geistMono.variable} ${manrope.variable} font-sans antialiased`}
       >
         <ApiProvider>
-          <GraphDataProvider>
-            <ThemeProvider
-              attribute='class'
-              defaultTheme='system'
-              enableSystem
-              disableTransitionOnChange
-            >
-              <Navbar />
+          <AuthProvider>
+            <GraphDataProvider>
+              <ThemeProvider
+                attribute='class'
+                defaultTheme='system'
+                enableSystem
+                disableTransitionOnChange
+              >
+                <ConditionalNavbar />
 
-              {children}
+                {children}
 
-              <Toaster
-                position='top-right'
-                toastOptions={{
-                  duration: 4000,
-                  style: {
-                    background: 'var(--card)',
-                    color: 'var(--card-foreground)',
-                    border: '1px solid var(--border)',
-                  },
-                  success: {
-                    iconTheme: {
-                      primary: 'var(--primary)',
-                      secondary: 'var(--primary-foreground)',
+                <Toaster
+                  position='top-right'
+                  toastOptions={{
+                    duration: 4000,
+                    style: {
+                      background: 'var(--card)',
+                      color: 'var(--card-foreground)',
+                      border: '1px solid var(--border)',
                     },
-                  },
-                  error: {
-                    iconTheme: {
-                      primary: 'var(--destructive)',
-                      secondary: 'var(--destructive-foreground)',
+                    success: {
+                      iconTheme: {
+                        primary: 'var(--primary)',
+                        secondary: 'var(--primary-foreground)',
+                      },
                     },
-                  },
-                }}
-              />
-            </ThemeProvider>
-          </GraphDataProvider>
+                    error: {
+                      iconTheme: {
+                        primary: 'var(--destructive)',
+                        secondary: 'var(--destructive-foreground)',
+                      },
+                    },
+                  }}
+                />
+              </ThemeProvider>
+            </GraphDataProvider>
+          </AuthProvider>
         </ApiProvider>
       </body>
     </html>

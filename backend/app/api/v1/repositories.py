@@ -1,3 +1,20 @@
+# RepoLens API - Repositories Endpoints
+#
+# Copyright (C) 2024 RepoLens Contributors
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 # Repository management API routes
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from typing import Dict, Any
@@ -9,7 +26,7 @@ from ...services.parser_service import ParserService
 from ...services.audit_service import AuditService
 from ...shared.models.api_models import RepoAnalysisRequest, RepoAnalysisResponse, IndexingStatus
 
-from ...core.dependencies import get_neo4j, get_parser, get_audit, authenticate, process_repository_analysis
+from ...core.dependencies import get_neo4j, get_parser, get_audit, get_db, authenticate, require_permissions, get_tenant_id, process_repository_analysis
 
 router = APIRouter(
     prefix="/repositories",

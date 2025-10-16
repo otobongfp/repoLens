@@ -1,3 +1,22 @@
+/**
+ * RepoLens Frontend - Page
+ * 
+ * Copyright (C) 2024 RepoLens Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -28,7 +47,7 @@ export default function SettingsPage() {
     testConnection,
     getEnvironmentInfo,
   } = useRepolensApi();
-  const { useLocalBackend, setUseLocalBackend } = useApi();
+  const { useLocalBackend, setUseLocalBackend, isInitialized } = useApi();
   const [cacheStats, setCacheStats] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [openaiKey, setOpenaiKey] = useState('');
@@ -230,6 +249,11 @@ export default function SettingsPage() {
                     ? 'Using local Python backend (port 8000)'
                     : 'Using cloud API'}
                 </div>
+                {!isInitialized && (
+                  <div className='text-xs text-yellow-400'>
+                    Loading preference...
+                  </div>
+                )}
               </div>
               <button
                 onClick={() => setUseLocalBackend(!useLocalBackend)}
@@ -280,6 +304,13 @@ export default function SettingsPage() {
                   ? "You're using your local backend. Configure API keys below to control costs."
                   : "You're using cloud API. Configure API keys below to override our defaults."}
               </p>
+              <div className='text-muted-foreground mt-2 text-xs'>
+                Debug: localStorage ={' '}
+                {typeof window !== 'undefined'
+                  ? localStorage.getItem('useLocalBackend')
+                  : 'N/A'}
+                , Initialized = {isInitialized ? 'Yes' : 'No'}
+              </div>
             </div>
             {/* OpenAI Configuration */}
             <div className='space-y-3'>

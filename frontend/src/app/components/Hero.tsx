@@ -1,3 +1,22 @@
+/**
+ * RepoLens Frontend - Hero Component
+ * 
+ * Copyright (C) 2024 RepoLens Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { CTAButton } from '@/components/CTAButton';
@@ -35,13 +54,17 @@ export default function Hero() {
             <div className='absolute top-0 left-4 h-full w-0.5 bg-[linear-gradient(to_bottom,_transparent_0%,_var(--border)_9.27%,_var(--border)_90.7%,_transparent_100%)]'></div>
             <section className='relative flex min-h-40 flex-col items-center justify-center gap-3 bg-transparent py-12 text-center backdrop-blur-sm sm:min-h-36 sm:py-24'>
               <h1 className='text-foreground px-2 font-serif text-2xl leading-tight font-extrabold sm:px-4 sm:text-3xl md:text-4xl lg:text-5xl'>
-                <span className='block sm:inline'>Understand Any</span>
-                <span className='block sm:inline'> Codebase in Seconds</span>
+                <span className='block sm:inline'>Understand Any </span>
+                <span className='block sm:inline'>
+                  Codebase & Engineer Requirements
+                </span>
+                <span className='block sm:inline'> in Seconds</span>
               </h1>
 
               <p className='text-muted-foreground sm:text-md max-w-xl px-2 text-center text-xs leading-relaxed sm:px-4 sm:text-sm'>
                 <span className='block sm:inline'>
-                  Paste a GitHub repo URL, visualize its structure,
+                  Upload requirements document or Paste a GitHub repo URL,
+                  visualize its structure, match requirements to codebase,
                 </span>
                 <span className='block sm:inline'>
                   {' '}
@@ -49,7 +72,7 @@ export default function Hero() {
                 </span>
                 <span className='block sm:inline'>
                   {' '}
-                  RepoLens makes onboarding effortless.
+                  RepoLens makes onboarding effortless for any project.
                 </span>
               </p>
               <div

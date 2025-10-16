@@ -1,3 +1,20 @@
+# RepoLens Service - Neo4J_Service Business Logic
+#
+# Copyright (C) 2024 RepoLens Contributors
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 # RepoLens Neo4j Service
 # Production-grade graph database operations with bulk-upsert capabilities
 
@@ -52,8 +69,13 @@ class Neo4jService:
         self.user = user
         self.password = password
         self.driver: Optional[Driver] = None
-        self._connect()
-        self._create_constraints()
+        self._connected = False
+    
+    def _ensure_connected(self):
+        """Ensure connection to Neo4j database"""
+        if not self._connected or self.driver is None:
+            self._connect()
+            self._create_constraints()
     
     def _connect(self):
         """Connect to Neo4j database"""
@@ -71,10 +93,12 @@ class Neo4jService:
                 result = session.run("RETURN 1 as test")
                 result.single()
             
+            self._connected = True
             logger.info(f"Connected to Neo4j at {self.uri}")
             
         except Exception as e:
             logger.error(f"Failed to connect to Neo4j: {e}")
+            self._connected = False
             raise
     
     def _create_constraints(self):
@@ -127,6 +151,7 @@ class Neo4jService:
     
     def bulk_upsert_functions(self, functions: List[Dict[str, Any]], tenant_id: str) -> BulkOperation:
         """Bulk upsert functions using UNWIND pattern"""
+        self._ensure_connected()
         operation_id = str(uuid.uuid4())
         start_time = datetime.now()
         
@@ -187,6 +212,7 @@ class Neo4jService:
     
     def bulk_upsert_classes(self, classes: List[Dict[str, Any]], tenant_id: str) -> BulkOperation:
         """Bulk upsert classes"""
+        self._ensure_connected()
         operation_id = str(uuid.uuid4())
         start_time = datetime.now()
         

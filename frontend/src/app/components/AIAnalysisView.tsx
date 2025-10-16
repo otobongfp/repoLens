@@ -1,3 +1,22 @@
+/**
+ * RepoLens Frontend - Aianalysisview Component
+ * 
+ * Copyright (C) 2024 RepoLens Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 import React, { useState, useEffect } from 'react';
 import { useGraphData } from '../context/GraphDataProvider';
 import { useRepolensApi } from '../utils/api';
@@ -19,7 +38,7 @@ interface AIAnalysisData {
 
 export default function AIAnalysisView() {
   const { currentFolder } = useGraphData();
-  const { fetchEnhancedGraph } = useRepolensApi();
+  const { fetchEnhancedGraph, apiBase } = useRepolensApi();
   const [analysisData, setAnalysisData] = useState<AIAnalysisData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,7 +56,7 @@ export default function AIAnalysisView() {
       console.log(enhancedGraph);
       console.log('Enhanced graph:', enhancedGraph);
       // Send to Python backend for AI analysis
-      const response = await fetch('http://localhost:8000/ai/analyze', {
+      const response = await fetch(`${apiBase}/ai/analyze`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -105,7 +124,7 @@ export default function AIAnalysisView() {
                 key={key}
                 className={`rounded-lg border p-4 ${getScoreBackground(score)}`}
               >
-                <div className='mb-1 text-sm capitalize text-gray-300'>
+                <div className='mb-1 text-sm text-gray-300 capitalize'>
                   {key === 'overall' ? 'Overall' : key}
                 </div>
                 <div className={`text-2xl font-bold ${getScoreColor(score)}`}>
@@ -138,11 +157,11 @@ export default function AIAnalysisView() {
             key={category}
             className='rounded-lg border border-gray-700 bg-gray-800/50 p-6'
           >
-            <h3 className='mb-3 text-lg font-semibold capitalize text-white'>
+            <h3 className='mb-3 text-lg font-semibold text-white capitalize'>
               {category} Analysis
             </h3>
             <div className='rounded-sm bg-gray-900/50 p-4'>
-              <pre className='whitespace-pre-wrap font-mono text-sm text-gray-300'>
+              <pre className='font-mono text-sm whitespace-pre-wrap text-gray-300'>
                 {content}
               </pre>
             </div>
@@ -165,7 +184,7 @@ export default function AIAnalysisView() {
             Security Analysis
           </h3>
           <div className='rounded-sm bg-gray-900/50 p-4'>
-            <pre className='whitespace-pre-wrap font-mono text-sm text-gray-300'>
+            <pre className='font-mono text-sm whitespace-pre-wrap text-gray-300'>
               {securityContent}
             </pre>
           </div>
@@ -305,7 +324,7 @@ export default function AIAnalysisView() {
         ].map((tab) => (
           <button
             key={tab.key}
-            className={`focus:outline-hidden rounded-t px-4 py-2 font-semibold transition ${
+            className={`rounded-t px-4 py-2 font-semibold transition focus:outline-hidden ${
               activeTab === tab.key
                 ? 'border-primary text-primary border-b-4 bg-white/5'
                 : 'text-white/80 hover:bg-white/10'

@@ -1,52 +1,21 @@
 # RepoLens
 
-> **Learn, Build, Improve**
+> **AI-Powered Codebase Analysis Platform**
 
-RepoLens is an **open-source education and developer improvement platform**. It helps learners and developers **understand codebases, complete coding tasks, get scored on their work, and continuously improve** through AI-powered feedback and visualization tools.
+RepoLens is an **AI-powered codebase analysis platform** that transforms repositories into interactive learning experiences. By combining **advanced code analysis**, **requirement mapping**, and **intelligent insights**, RepoLens helps developers understand, maintain, and learn from complex codebases.
 
-Whether you're a beginner learning to code, a student completing assignments, or a developer navigating a large codebase, RepoLens provides the tools to **learn, practice, and grow**.
-
----
-
-## Features
-
-### Code Understanding
-
-- **Code Graph Visualization** – explore files, functions, classes, and imports as an interactive graph.
-- **Dependency Matrix** – view file-to-file import relationships in a clear matrix view.
-- **Function Flow** – trace function calls across files and modules.
-- **Heatmaps** – visually identify complexity hotspots in the codebase.
-- **AI Code Insights** – detect vulnerabilities, measure quality, and receive refactoring suggestions.
-
-### Learning & Education
-
-- **Knowledge Graphs** - Convert a repo, a piece of code into a knowledge graph
-- **Learning Paths** – structured challenges and project-based tasks to guide learners.
-- **Task Management** – create, assign, and track coding exercises or projects.
-- **Automated Scoring** – correctness tests, style checks, and AI-driven evaluations.
-- **Progress Tracking** – dashboards showing improvement, scores, and completion rates.
-- **AI Feedback & Hints** – contextual suggestions, resources, and improvement tips.
-
-### Collaboration & Community
-
-- **Peer & AI Review** – students and developers receive both human and AI feedback.
-- **Open Learning** – learn from public repos and share your progress.
-
----
-
-## Architecture
-
-RepoLens is a hybrid stack designed for extensibility:
-
-- **Frontend** – Next.js (React, TypeScript, D3.js) for interactive UI.
-- **Backend** – FastAPI (Python) for API and orchestration.
-- **Local Agent** – Rust (Axum) for secure, high-performance repo parsing and analysis.
-- **AI Layer** – OpenAI (or other LLMs) for feedback, scoring, and suggestions.
-- **Database** – PostgreSQL for user data, progress tracking, and reports.
+Whether you're analyzing a new codebase, identifying technical debt, or learning from real-world projects, RepoLens provides the tools to **understand, analyze, and improve** code quality.
 
 ---
 
 ## Quick Start
+
+### Prerequisites
+- Python 3.12+
+- Node.js 18+
+- Docker & Docker Compose
+- PostgreSQL 15+
+- Redis 7+
 
 ### 1. Clone the repository
 
@@ -55,66 +24,91 @@ git clone https://github.com/otobongfp/repolens.git
 cd repolens
 ```
 
-### 2. Install dependencies
+### 2. Set up environment variables
 
 **Backend:**
-
 ```bash
 cd backend
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+cp example.env .env
+# Edit .env with your configuration
 ```
 
 **Frontend:**
-
-```bash
-cd ../frontend
-npm install
-```
-
-### 3. Configure environment variables
-
-Copy `.env.example` → `.env` in `backend` and set your variables (e.g., API keys).
-
-### 4. Start the servers
-
-**Backend:**
-
-```bash
-cd backend
-uvicorn app.main:app --reload
-```
-
-**Frontend:**
-
 ```bash
 cd frontend
+cp env.example .env.local
+# Edit .env.local with your API URL
+```
+
+### 3. Start services with Docker Compose
+
+```bash
+# Start all services (PostgreSQL, Redis, Neo4j, Backend)
+docker-compose up -d
+
+# Or start individual services
+docker-compose up -d postgres redis neo4j
+```
+
+### 4. Set up the database
+
+```bash
+cd backend
+# Install dependencies
+pip install -r requirements.txt
+
+# Run database migrations
+alembic upgrade head
+
+# Create initial data
+python -c "from app.database.connection import init_db; import asyncio; asyncio.run(init_db())"
+```
+
+### 5. Start the development servers
+
+**Backend:**
+```bash
+cd backend
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+**Frontend:**
+```bash
+cd frontend
+npm install
 npm run dev
 ```
 
-Then open [http://localhost:3000](http://localhost:3000) in your browser.
+### 6. Access the application
+
+- **Frontend**: [http://localhost:3000](http://localhost:3000)
+- **Backend API**: [http://localhost:8000](http://localhost:8000)
+- **API Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
 
 ---
 
 ## Documentation
 
-- [Development Guide](backend/DEVELOPMENT.md) – backend setup, grammar building, contributing.
-- [AI Setup](backend/AI_SETUP.md) – enable and configure AI features.
-- [Education Module](docs/LEARNING.md) – manage tasks, scoring, and progress.
+- [Project Info & Vision](docs/INFO.md) – Project goals, milestones, and technical stack
+- [Authentication Setup](AUTHENTICATION.md) – Configure OAuth and JWT authentication
+- [Database Schema](docs/SCHEMA.md) – Database models and relationships
+- [API Documentation](http://localhost:8000/docs) – Interactive API documentation
 
 ---
 
-## Roadmap
+## Contributing
 
-- Repo visualization & AI code analysis
-- Automated scoring engine (tests + AI evaluation)
-- Learning paths & task management
-- Student dashboards & progress reports
-- Open community of learners, educators, and contributors
+We welcome contributions! Please see our [Contributing Guidelines](docs/CONTRIBUTING.md) for details.
+
+- Check issues labeled **good first issue** or **help wanted**
+- Improve analysis accuracy, visualization quality, or user experience
+- Add new analysis types, integrations, or enterprise features
 
 ---
 
-## 📄 License
+## License
 
-Apache License 2.0
+This project is licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0)** - see the [LICENSE](LICENSE) file for details.
+
+
+For commercial use or enterprise licensing, please contact the maintainers.

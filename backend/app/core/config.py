@@ -1,3 +1,20 @@
+# RepoLens Core - Config Configuration
+#
+# Copyright (C) 2024 RepoLens Contributors
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 # Core configuration and settings
 from pydantic_settings import BaseSettings
 from typing import Optional
@@ -9,7 +26,13 @@ class Settings(BaseSettings):
     # API Configuration
     app_name: str = "RepoLens API"
     app_version: str = "2.0.0"
-    debug: Optional[str] = None
+    debug: str = "false"
+    
+    # Database Configuration
+    database_url: str = "postgresql+asyncpg://postgres:password@localhost:5432/repolens"
+    
+    # Redis Configuration
+    redis_url: str = "redis://localhost:6379"
     
     # OpenAI Configuration
     openai_api_key: Optional[str] = None
@@ -36,6 +59,21 @@ class Settings(BaseSettings):
     # Rate Limiting
     rate_limit_requests: int = 100
     rate_limit_window: int = 60
+    
+    # Authentication Configuration
+    jwt_secret_key: str = "your-secret-key-change-in-production"
+    jwt_algorithm: str = "HS256"
+    jwt_access_token_expire_minutes: int = 30
+    jwt_refresh_token_expire_days: int = 7
+    
+    # OAuth Configuration
+    google_client_id: Optional[str] = None
+    google_client_secret: Optional[str] = None
+    github_client_id: Optional[str] = None
+    github_client_secret: Optional[str] = None
+    
+    # Frontend URL for OAuth redirects
+    frontend_url: str = "http://localhost:3000"
     
     # CORS
     cors_origins: list = [

@@ -1,15 +1,34 @@
+# RepoLens API - Projects Endpoints
+#
+# Copyright (C) 2024 RepoLens Contributors
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 # Project Management API Routes
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from typing import Dict, Any, List
 from datetime import datetime, timezone
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...shared.models.project_models import (
     ProjectCreateRequest, ProjectUpdateRequest, ProjectResponse,
     ProjectListResponse, ProjectAnalysisRequest, ProjectAnalysisResponse,
     UserSettingsRequest, UserSettingsResponse, EnvironmentConfig
 )
+from ...services.project_service import ProjectService
 
-from ...core.dependencies import get_tenant_id, get_db, authenticate, require_permissions
+from ...core.dependencies import get_tenant_id, get_db_session, authenticate, require_permissions, get_project
 
 router = APIRouter(
     prefix="/projects",
@@ -42,8 +61,9 @@ router = APIRouter(
 async def create_project(
     request: ProjectCreateRequest,
     tenant_id: str = Depends(get_tenant_id),
-    db = Depends(get_db),
-    user: Dict[str, Any] = Depends(authenticate)
+    project_service: ProjectService = Depends(get_project),
+    user: Dict[str, Any] = Depends(authenticate),
+    db: AsyncSession = Depends(get_db_session)
 ):
     """Create a new project"""
     
@@ -53,34 +73,15 @@ async def create_project(
             detail="Tenant mismatch"
         )
     
-    # TODO: Implement actual project creation with ProjectService
-    # For now, return mock response
-    project_id = f"proj_{tenant_id}_{len(db.projects) + 1}"
-    
-    project = {
-        "project_id": project_id,
-        "name": request.name,
-        "description": request.description,
-        "storage_config": request.storage_config.dict(),
-        "status": "ready",
-        "tenant_id": tenant_id,
-        "created_at": datetime.now(timezone.utc),
-        "updated_at": datetime.now(timezone.utc),
-        "analysis_count": 0,
-        "file_count": 0,
-        "size_bytes": 0
-    }
-    
-    db.projects[project_id] = project
-    
-    await db.log_audit(
-        actor_id=user["user_id"],
-        action="create_project",
-        target_ids=[project_id],
-        details={"name": request.name}
-    )
-    
-    return ProjectResponse(**project)
+    try:
+        # Use the real ProjectService to create the project
+        project = await project_service.create_project(request, db, user["user_id"])
+        return project
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create project: {str(e)}"
+        )
 
 @router.get(
     "",
@@ -110,42 +111,21 @@ async def list_projects(
     page_size: int = Query(20, ge=1, le=100, description="Items per page"),
     status: str = Query(None, description="Filter by status"),
     project_type: str = Query(None, description="Filter by storage type"),
-    db = Depends(get_db),
-    user: Dict[str, Any] = Depends(authenticate)
+    project_service: ProjectService = Depends(get_project),
+    user: Dict[str, Any] = Depends(authenticate),
+    db: AsyncSession = Depends(get_db_session)
 ):
     """List projects for tenant"""
     
-    # Filter projects by tenant
-    tenant_projects = [
-        p for p in db.projects.values() 
-        if p.get("tenant_id") == tenant_id
-    ]
-    
-    # Apply filters
-    if status:
-        tenant_projects = [p for p in tenant_projects if p.get("status") == status]
-    
-    if project_type:
-        tenant_projects = [
-            p for p in tenant_projects 
-            if p.get("storage_config", {}).get("type") == project_type
-        ]
-    
-    # Pagination
-    total = len(tenant_projects)
-    start = (page - 1) * page_size
-    end = start + page_size
-    paginated_projects = tenant_projects[start:end]
-    
-    # Convert to response models
-    projects = [ProjectResponse(**p) for p in paginated_projects]
-    
-    return ProjectListResponse(
-        projects=projects,
-        total=total,
-        page=page,
-        page_size=page_size
-    )
+    try:
+        # Use the real ProjectService to list projects
+        result = await project_service.list_projects(db, tenant_id, page, page_size)
+        return result
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to list projects: {str(e)}"
+        )
 
 @router.get(
     "/{project_id}",
@@ -173,25 +153,28 @@ async def list_projects(
 async def get_project(
     project_id: str,
     tenant_id: str = Depends(get_tenant_id),
-    db = Depends(get_db),
-    user: Dict[str, Any] = Depends(authenticate)
+    project_service: ProjectService = Depends(get_project),
+    user: Dict[str, Any] = Depends(authenticate),
+    db: AsyncSession = Depends(get_db_session)
 ):
     """Get project by ID"""
     
-    if project_id not in db.projects:
+    try:
+        # Use the real ProjectService to get the project
+        project = await project_service.get_project(db, project_id, tenant_id)
+        if not project:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Project not found"
+            )
+        return project
+    except HTTPException:
+        raise
+    except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Project not found"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get project: {str(e)}"
         )
-    
-    project = db.projects[project_id]
-    if project.get("tenant_id") != tenant_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied"
-        )
-    
-    return ProjectResponse(**project)
 
 @router.put(
     "/{project_id}",
@@ -220,42 +203,28 @@ async def update_project(
     project_id: str,
     request: ProjectUpdateRequest,
     tenant_id: str = Depends(get_tenant_id),
-    db = Depends(get_db),
-    user: Dict[str, Any] = Depends(authenticate)
+    project_service: ProjectService = Depends(get_project),
+    user: Dict[str, Any] = Depends(authenticate),
+    db: AsyncSession = Depends(get_db_session)
 ):
     """Update project"""
     
-    if project_id not in db.projects:
+    try:
+        # Use the real ProjectService to update the project
+        project = await project_service.update_project(db, project_id, tenant_id, request)
+        if not project:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Project not found"
+            )
+        return project
+    except HTTPException:
+        raise
+    except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Project not found"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update project: {str(e)}"
         )
-    
-    project = db.projects[project_id]
-    if project.get("tenant_id") != tenant_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied"
-        )
-    
-    # Update fields
-    if request.name:
-        project["name"] = request.name
-    if request.description is not None:
-        project["description"] = request.description
-    if request.storage_config:
-        project["storage_config"] = request.storage_config.dict()
-    
-    project["updated_at"] = datetime.now(timezone.utc)
-    
-    await db.log_audit(
-        actor_id=user["user_id"],
-        action="update_project",
-        target_ids=[project_id],
-        details={"updated_fields": list(request.dict(exclude_unset=True).keys())}
-    )
-    
-    return ProjectResponse(**project)
 
 @router.delete(
     "/{project_id}",
@@ -282,35 +251,28 @@ async def update_project(
 async def delete_project(
     project_id: str,
     tenant_id: str = Depends(get_tenant_id),
-    db = Depends(get_db),
-    user: Dict[str, Any] = Depends(require_permissions(["delete"]))
+    project_service: ProjectService = Depends(get_project),
+    user: Dict[str, Any] = Depends(require_permissions(["delete"])),
+    db: AsyncSession = Depends(get_db_session)
 ):
     """Delete project"""
     
-    if project_id not in db.projects:
+    try:
+        # Use the real ProjectService to delete the project
+        success = await project_service.delete_project(db, project_id, tenant_id)
+        if not success:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Project not found"
+            )
+        return {"message": "Project deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Project not found"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete project: {str(e)}"
         )
-    
-    project = db.projects[project_id]
-    if project.get("tenant_id") != tenant_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied"
-        )
-    
-    # Delete project
-    del db.projects[project_id]
-    
-    await db.log_audit(
-        actor_id=user["user_id"],
-        action="delete_project",
-        target_ids=[project_id],
-        details={"name": project.get("name")}
-    )
-    
-    return {"message": "Project deleted successfully"}
 
 @router.post(
     "/{project_id}/analyze",
@@ -340,45 +302,25 @@ async def analyze_project(
     project_id: str,
     request: ProjectAnalysisRequest,
     tenant_id: str = Depends(get_tenant_id),
-    db = Depends(get_db),
+    project_service: ProjectService = Depends(get_project),
     user: Dict[str, Any] = Depends(authenticate)
 ):
     """Analyze project"""
     
-    if project_id not in db.projects:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Project not found"
+    try:
+        # Use the real ProjectService to start analysis
+        result = project_service.start_project_analysis(
+            project_id, 
+            tenant_id, 
+            request.analysis_type, 
+            request.force_refresh
         )
-    
-    project = db.projects[project_id]
-    if project.get("tenant_id") != tenant_id:
+        return ProjectAnalysisResponse(**result)
+    except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to start analysis: {str(e)}"
         )
-    
-    # TODO: Implement actual analysis with ProjectService
-    analysis_id = f"analysis_{project_id}_{int(datetime.now().timestamp())}"
-    
-    analysis = {
-        "analysis_id": analysis_id,
-        "project_id": project_id,
-        "status": "started",
-        "started_at": datetime.now(timezone.utc),
-        "progress": {"files_processed": 0, "total_files": 100}
-    }
-    
-    db.analyses[analysis_id] = analysis
-    
-    await db.log_audit(
-        actor_id=user["user_id"],
-        action="start_analysis",
-        target_ids=[project_id, analysis_id],
-        details={"analysis_type": request.analysis_type}
-    )
-    
-    return ProjectAnalysisResponse(**analysis)
 
 @router.get(
     "/{project_id}/analyses",
@@ -405,28 +347,27 @@ async def analyze_project(
 async def get_project_analyses(
     project_id: str,
     tenant_id: str = Depends(get_tenant_id),
-    db = Depends(get_db),
+    project_service: ProjectService = Depends(get_project),
     user: Dict[str, Any] = Depends(authenticate)
 ):
     """Get project analyses"""
     
-    if project_id not in db.projects:
+    try:
+        # First check if project exists
+        project = project_service.get_project(project_id, tenant_id)
+        if not project:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Project not found"
+            )
+        
+        # TODO: Implement actual analysis history retrieval
+        # For now, return empty list
+        return {"analyses": [], "total": 0}
+    except HTTPException:
+        raise
+    except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Project not found"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get analyses: {str(e)}"
         )
-    
-    project = db.projects[project_id]
-    if project.get("tenant_id") != tenant_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied"
-        )
-    
-    # Get analyses for this project
-    project_analyses = [
-        a for a in db.analyses.values() 
-        if a.get("project_id") == project_id
-    ]
-    
-    return {"analyses": project_analyses, "total": len(project_analyses)}
