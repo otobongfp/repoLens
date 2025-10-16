@@ -1,6 +1,6 @@
 /**
  * RepoLens Frontend - Hero Component
- * 
+ *
  * Copyright (C) 2024 RepoLens Contributors
  *
  * This program is free software: you can redistribute it and/or modify
@@ -18,7 +18,7 @@
  */
 
 import Link from 'next/link';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Info, Github } from 'lucide-react';
 import { CTAButton } from '@/components/CTAButton';
 import { Reveal } from '@/components/Reveal';
 
@@ -96,7 +96,7 @@ export default function Hero() {
         </Reveal>
       </section>
 
-      <div className='relative z-20 flex items-center justify-center gap-4'>
+      <div className='relative z-20 flex flex-col items-center justify-center gap-4'>
         <Reveal delay={0.5}>
           <Link href='/select' className='group'>
             <CTAButton className='sm:text-md text-sm font-medium capitalize'>
@@ -104,6 +104,30 @@ export default function Hero() {
             </CTAButton>
           </Link>
         </Reveal>
+
+        <div className='flex items-center gap-4'>
+          <Reveal delay={0.6}>
+            <Link
+              href='/about'
+              className='border-border bg-card text-card-foreground hover:bg-accent hover:text-accent-foreground inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition'
+            >
+              <Info className='h-4 w-4' />
+              About RepoLens
+            </Link>
+          </Reveal>
+
+          <Reveal delay={0.7}>
+            <Link
+              href='https://github.com/otobongfp/repolens'
+              target='_blank'
+              rel='noopener noreferrer'
+              className='border-border bg-card text-card-foreground hover:bg-accent hover:text-accent-foreground inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition'
+            >
+              <Github className='h-4 w-4' />
+              GitHub
+            </Link>
+          </Reveal>
+        </div>
       </div>
 
       <section className='relative isolate w-full md:hidden'>

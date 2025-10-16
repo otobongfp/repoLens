@@ -82,10 +82,3 @@ uvicorn app.main:app --reload
 
 - If AI analysis is disabled, check your OpenAI API key and environment variables.
 - For code parsing issues, ensure the correct pre-built Tree-sitter packages are installed.
-
----
-
-## 9. References
-
-- [AI Setup Guide](AI_SETUP.md)
-- [Token Limit Strategies](docs/TOKEN_LIMIT_STRATEGIES.md)
