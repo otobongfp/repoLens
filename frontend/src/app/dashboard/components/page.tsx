@@ -1,6 +1,6 @@
 /**
  * RepoLens Frontend - Page Component
- * 
+ *
  * Copyright (C) 2024 RepoLens Contributors
  *
  * This program is free software: you can redistribute it and/or modify
@@ -19,8 +19,9 @@
 
 'use client';
 
+export const runtime = 'edge';
+
 import Link from 'next/link';
-import Navbar from '../../components/Navbar';
 import { PuzzleIcon } from '../../components/LucideIcons';
 
 export default function ComponentsDashboard() {

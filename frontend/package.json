@@ -9,7 +9,9 @@
     "eslint:check": "tsc --noEmit && eslint --ext .js,.jsx,.ts,.tsx src",
     "eslint:fix": "eslint --fix --ext .js,.jsx,.ts,.tsx src",
     "prettier:check": "prettier --check src",
-    "prettier:fix": "prettier --write src"
+    "prettier:fix": "prettier --write src",
+    "build:cf": "npx @cloudflare/next-on-pages@latest",
+    "deploy": "npm run build:cf && wrangler pages deploy .vercel/output/static"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.2.3",

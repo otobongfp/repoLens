@@ -1,5 +1,7 @@
 'use client';
 
+export const runtime = 'edge';
+
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import Link from 'next/link';
 import { AlertTriangle, Home, RefreshCw, Bug } from 'lucide-react';

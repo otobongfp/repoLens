@@ -1,6 +1,6 @@
 /**
  * RepoLens Frontend - Navbar Component
- * 
+ *
  * Copyright (C) 2024 RepoLens Contributors
  *
  * This program is free software: you can redistribute it and/or modify
@@ -18,6 +18,7 @@
  */
 
 'use client';
+
 import { SearchCode } from 'lucide-react';
 import { useAuth } from '../context/AuthProvider';
 import Link from 'next/link';

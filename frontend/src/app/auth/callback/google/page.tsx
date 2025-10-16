@@ -1,6 +1,6 @@
 /**
  * RepoLens Frontend - Page
- * 
+ *
  * Copyright (C) 2024 RepoLens Contributors
  *
  * This program is free software: you can redistribute it and/or modify
@@ -18,6 +18,8 @@
  */
 
 'use client';
+
+export const runtime = 'edge';
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';

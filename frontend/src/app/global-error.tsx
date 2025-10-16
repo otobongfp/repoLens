@@ -1,5 +1,7 @@
 'use client';
 
+export const runtime = 'edge';
+
 import Link from 'next/link';
 import { AlertTriangle, Home, RefreshCw } from 'lucide-react';
 
