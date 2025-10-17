@@ -1,20 +1,3 @@
-# RepoLens Service - Neo4J_Service Business Logic
-#
-# Copyright (C) 2024 RepoLens Contributors
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Affero General Public License for more details.
-#
-# You should have received a copy of the GNU Affero General Public License
-# along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
 # RepoLens Neo4j Service
 # Production-grade graph database operations with bulk-upsert capabilities
 
@@ -33,26 +16,32 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
+
 @dataclass
 class GraphNode:
     """Graph node representation"""
+
     node_id: str
     labels: List[str]
     properties: Dict[str, Any]
     tenant_id: str
 
+
 @dataclass
 class GraphEdge:
     """Graph edge representation"""
+
     from_node: str
     to_node: str
     relationship_type: str
     properties: Dict[str, Any]
     tenant_id: str
 
+
 @dataclass
 class BulkOperation:
     """Bulk operation result"""
+
     operation_id: str
     nodes_created: int
     nodes_updated: int
@@ -61,22 +50,23 @@ class BulkOperation:
     errors: List[str]
     duration_ms: int
 
+
 class Neo4jService:
     """Neo4j service with bulk operations and enterprise features"""
-    
+
     def __init__(self, uri: str, user: str, password: str):
         self.uri = uri
         self.user = user
         self.password = password
         self.driver: Optional[Driver] = None
         self._connected = False
-    
+
     def _ensure_connected(self):
         """Ensure connection to Neo4j database"""
         if not self._connected or self.driver is None:
             self._connect()
             self._create_constraints()
-    
+
     def _connect(self):
         """Connect to Neo4j database"""
         try:
@@ -85,76 +75,71 @@ class Neo4jService:
                 auth=(self.user, self.password),
                 max_connection_lifetime=3600,
                 max_connection_pool_size=50,
-                connection_timeout=30
+                connection_timeout=30,
             )
-            
+
             # Test connection
             with self.driver.session() as session:
                 result = session.run("RETURN 1 as test")
                 result.single()
-            
+
             self._connected = True
             logger.info(f"Connected to Neo4j at {self.uri}")
-            
+
         except Exception as e:
             logger.error(f"Failed to connect to Neo4j: {e}")
             self._connected = False
             raise
-    
+
     def _create_constraints(self):
         """Create database constraints"""
         constraints = [
             # Tenant constraints
             "CREATE CONSTRAINT IF NOT EXISTS tenant_unique FOR (t:Tenant) REQUIRE t.tenant_id IS UNIQUE",
-            
             # Repository constraints
             "CREATE CONSTRAINT IF NOT EXISTS repo_unique FOR (r:Repo) REQUIRE (r.tenant_id, r.repo_id) IS UNIQUE",
-            
             # File constraints
             "CREATE CONSTRAINT IF NOT EXISTS file_unique FOR (f:File) REQUIRE (f.tenant_id, f.repo_id, f.path) IS UNIQUE",
-            
             # Function constraints
             "CREATE CONSTRAINT IF NOT EXISTS function_unique FOR (func:Function) REQUIRE (func.tenant_id, func.repo_id, func.qualified_name) IS UNIQUE",
-            
             # Class constraints
             "CREATE CONSTRAINT IF NOT EXISTS class_unique FOR (c:Class) REQUIRE (c.tenant_id, c.repo_id, c.qualified_name) IS UNIQUE",
-            
             # Symbol constraints
             "CREATE CONSTRAINT IF NOT EXISTS symbol_unique FOR (s:Symbol) REQUIRE (s.tenant_id, s.symbol_id) IS UNIQUE",
-            
             # Requirement constraints
             "CREATE CONSTRAINT IF NOT EXISTS requirement_unique FOR (req:Requirement) REQUIRE (req.tenant_id, req.req_id) IS UNIQUE",
-            
             # Action proposal constraints
             "CREATE CONSTRAINT IF NOT EXISTS proposal_unique FOR (p:ActionProposal) REQUIRE (p.tenant_id, p.proposal_id) IS UNIQUE",
-            
             # Verification constraints
             "CREATE CONSTRAINT IF NOT EXISTS verification_unique FOR (v:Verification) REQUIRE (v.tenant_id, v.verification_id) IS UNIQUE",
-            
             # Audit event constraints
-            "CREATE CONSTRAINT IF NOT EXISTS audit_unique FOR (a:AuditEvent) REQUIRE a.event_id IS UNIQUE"
+            "CREATE CONSTRAINT IF NOT EXISTS audit_unique FOR (a:AuditEvent) REQUIRE a.event_id IS UNIQUE",
         ]
-        
+
         with self.driver.session() as session:
             for constraint in constraints:
                 try:
                     session.run(constraint)
-                    logger.info(f"Created constraint: {constraint.split('FOR')[1].split('REQUIRE')[0].strip()}")
+                    logger.info(
+                        f"Created constraint: {constraint.split('FOR')[1].split('REQUIRE')[0].strip()}"
+                    )
                 except Exception as e:
                     logger.warning(f"Constraint may already exist: {e}")
-    
+
     def close(self):
         """Close Neo4j connection"""
         if self.driver:
             self.driver.close()
             logger.info("Closed Neo4j connection")
-    
-    def bulk_upsert_functions(self, functions: List[Dict[str, Any]], tenant_id: str) -> BulkOperation:
+
+    def bulk_upsert_functions(
+        self, functions: List[Dict[str, Any]], tenant_id: str
+    ) -> BulkOperation:
         """Bulk upsert functions using UNWIND pattern"""
         self._ensure_connected()
         operation_id = str(uuid.uuid4())
         start_time = datetime.now()
-        
+
         cypher = """
         UNWIND $functions AS fn
         MERGE (file:File {tenant_id: fn.tenant_id, repo_id: fn.repo_id, path: fn.file_path})
@@ -180,14 +165,14 @@ class Neo4jService:
         
         MERGE (file)-[:CONTAINS]->(func)
         """
-        
+
         try:
             with self.driver.session() as session:
                 result = session.run(cypher, functions=functions)
                 result.consume()
-                
+
                 duration = (datetime.now() - start_time).total_seconds() * 1000
-                
+
                 return BulkOperation(
                     operation_id=operation_id,
                     nodes_created=len(functions),
@@ -195,9 +180,9 @@ class Neo4jService:
                     edges_created=len(functions),
                     edges_updated=0,
                     errors=[],
-                    duration_ms=int(duration)
+                    duration_ms=int(duration),
                 )
-                
+
         except Exception as e:
             logger.error(f"Bulk upsert functions failed: {e}")
             return BulkOperation(
@@ -207,15 +192,17 @@ class Neo4jService:
                 edges_created=0,
                 edges_updated=0,
                 errors=[str(e)],
-                duration_ms=0
+                duration_ms=0,
             )
-    
-    def bulk_upsert_classes(self, classes: List[Dict[str, Any]], tenant_id: str) -> BulkOperation:
+
+    def bulk_upsert_classes(
+        self, classes: List[Dict[str, Any]], tenant_id: str
+    ) -> BulkOperation:
         """Bulk upsert classes"""
         self._ensure_connected()
         operation_id = str(uuid.uuid4())
         start_time = datetime.now()
-        
+
         cypher = """
         UNWIND $classes AS cls
         MERGE (file:File {tenant_id: cls.tenant_id, repo_id: cls.repo_id, path: cls.file_path})
@@ -235,14 +222,14 @@ class Neo4jService:
         
         MERGE (file)-[:CONTAINS]->(class)
         """
-        
+
         try:
             with self.driver.session() as session:
                 result = session.run(cypher, classes=classes)
                 result.consume()
-                
+
                 duration = (datetime.now() - start_time).total_seconds() * 1000
-                
+
                 return BulkOperation(
                     operation_id=operation_id,
                     nodes_created=len(classes),
@@ -250,9 +237,9 @@ class Neo4jService:
                     edges_created=len(classes),
                     edges_updated=0,
                     errors=[],
-                    duration_ms=int(duration)
+                    duration_ms=int(duration),
                 )
-                
+
         except Exception as e:
             logger.error(f"Bulk upsert classes failed: {e}")
             return BulkOperation(
@@ -262,11 +249,18 @@ class Neo4jService:
                 edges_created=0,
                 edges_updated=0,
                 errors=[str(e)],
-                duration_ms=0
+                duration_ms=0,
             )
-    
-    def create_implemented_by_edge(self, req_id: str, function_id: str, tenant_id: str, 
-                                 confidence: float, evidence_s3: str, method: str) -> bool:
+
+    def create_implemented_by_edge(
+        self,
+        req_id: str,
+        function_id: str,
+        tenant_id: str,
+        confidence: float,
+        evidence_s3: str,
+        method: str,
+    ) -> bool:
         """Create IMPLEMENTED_BY edge between requirement and function"""
         cypher = """
         MATCH (r:Requirement {req_id: $req_id, tenant_id: $tenant_id})
@@ -278,29 +272,34 @@ class Neo4jService:
             e.last_checked_at = datetime()
         RETURN e
         """
-        
+
         try:
             with self.driver.session() as session:
-                result = session.run(cypher, {
-                    'req_id': req_id,
-                    'function_id': function_id,
-                    'tenant_id': tenant_id,
-                    'confidence': confidence,
-                    'evidence_s3': evidence_s3,
-                    'method': method
-                })
-                
+                result = session.run(
+                    cypher,
+                    {
+                        "req_id": req_id,
+                        "function_id": function_id,
+                        "tenant_id": tenant_id,
+                        "confidence": confidence,
+                        "evidence_s3": evidence_s3,
+                        "method": method,
+                    },
+                )
+
                 return result.single() is not None
-                
+
         except Exception as e:
             logger.error(f"Failed to create IMPLEMENTED_BY edge: {e}")
             return False
-    
-    def create_call_edges(self, calls: List[Dict[str, Any]], tenant_id: str) -> BulkOperation:
+
+    def create_call_edges(
+        self, calls: List[Dict[str, Any]], tenant_id: str
+    ) -> BulkOperation:
         """Create CALLS edges between functions"""
         operation_id = str(uuid.uuid4())
         start_time = datetime.now()
-        
+
         cypher = """
         UNWIND $calls AS call
         MATCH (from:Function {function_id: call.from_function_id, tenant_id: $tenant_id})
@@ -312,14 +311,14 @@ class Neo4jService:
             e.confidence = call.confidence,
             e.created_at = datetime()
         """
-        
+
         try:
             with self.driver.session() as session:
                 result = session.run(cypher, calls=calls, tenant_id=tenant_id)
                 result.consume()
-                
+
                 duration = (datetime.now() - start_time).total_seconds() * 1000
-                
+
                 return BulkOperation(
                     operation_id=operation_id,
                     nodes_created=0,
@@ -327,9 +326,9 @@ class Neo4jService:
                     edges_created=len(calls),
                     edges_updated=0,
                     errors=[],
-                    duration_ms=int(duration)
+                    duration_ms=int(duration),
                 )
-                
+
         except Exception as e:
             logger.error(f"Bulk create call edges failed: {e}")
             return BulkOperation(
@@ -339,14 +338,16 @@ class Neo4jService:
                 edges_created=0,
                 edges_updated=0,
                 errors=[str(e)],
-                duration_ms=0
+                duration_ms=0,
             )
-    
-    def create_import_edges(self, imports: List[Dict[str, Any]], tenant_id: str) -> BulkOperation:
+
+    def create_import_edges(
+        self, imports: List[Dict[str, Any]], tenant_id: str
+    ) -> BulkOperation:
         """Create IMPORT edges"""
         operation_id = str(uuid.uuid4())
         start_time = datetime.now()
-        
+
         cypher = """
         UNWIND $imports AS imp
         MATCH (file:File {file_id: imp.file_id, tenant_id: $tenant_id})
@@ -361,14 +362,14 @@ class Neo4jService:
             e.resolution_confidence = imp.resolution_confidence,
             e.created_at = datetime()
         """
-        
+
         try:
             with self.driver.session() as session:
                 result = session.run(cypher, imports=imports, tenant_id=tenant_id)
                 result.consume()
-                
+
                 duration = (datetime.now() - start_time).total_seconds() * 1000
-                
+
                 return BulkOperation(
                     operation_id=operation_id,
                     nodes_created=len(imports),
@@ -376,9 +377,9 @@ class Neo4jService:
                     edges_created=len(imports),
                     edges_updated=0,
                     errors=[],
-                    duration_ms=int(duration)
+                    duration_ms=int(duration),
                 )
-                
+
         except Exception as e:
             logger.error(f"Bulk create import edges failed: {e}")
             return BulkOperation(
@@ -388,10 +389,12 @@ class Neo4jService:
                 edges_created=0,
                 edges_updated=0,
                 errors=[str(e)],
-                duration_ms=0
+                duration_ms=0,
             )
-    
-    def search_functions(self, query: str, tenant_id: str, limit: int = 10) -> List[Dict[str, Any]]:
+
+    def search_functions(
+        self, query: str, tenant_id: str, limit: int = 10
+    ) -> List[Dict[str, Any]]:
         """Search functions by name or signature"""
         cypher = """
         MATCH (f:Function {tenant_id: $tenant_id})
@@ -405,17 +408,21 @@ class Neo4jService:
         ORDER BY f.name
         LIMIT $limit
         """
-        
+
         try:
             with self.driver.session() as session:
-                result = session.run(cypher, query=query, tenant_id=tenant_id, limit=limit)
+                result = session.run(
+                    cypher, query=query, tenant_id=tenant_id, limit=limit
+                )
                 return [dict(record) for record in result]
-                
+
         except Exception as e:
             logger.error(f"Function search failed: {e}")
             return []
-    
-    def get_function_call_graph(self, function_id: str, tenant_id: str, depth: int = 2) -> Dict[str, Any]:
+
+    def get_function_call_graph(
+        self, function_id: str, tenant_id: str, depth: int = 2
+    ) -> Dict[str, Any]:
         """Get call graph for a function"""
         cypher = """
         MATCH (f:Function {function_id: $function_id, tenant_id: $tenant_id})
@@ -423,39 +430,43 @@ class Neo4jService:
         RETURN f, called, path
         ORDER BY length(path)
         """
-        
+
         try:
             with self.driver.session() as session:
-                result = session.run(cypher, function_id=function_id, tenant_id=tenant_id, depth=depth)
-                
+                result = session.run(
+                    cypher, function_id=function_id, tenant_id=tenant_id, depth=depth
+                )
+
                 nodes = set()
                 edges = []
-                
+
                 for record in result:
-                    f = record['f']
-                    called = record['called']
-                    path = record['path']
-                    
-                    nodes.add((f['function_id'], f['name'], 'function'))
-                    nodes.add((called['function_id'], called['name'], 'function'))
-                    
+                    f = record["f"]
+                    called = record["called"]
+                    path = record["path"]
+
+                    nodes.add((f["function_id"], f["name"], "function"))
+                    nodes.add((called["function_id"], called["name"], "function"))
+
                     for rel in path.relationships:
-                        edges.append({
-                            'from': rel.start_node['function_id'],
-                            'to': rel.end_node['function_id'],
-                            'type': rel.type,
-                            'confidence': rel.get('confidence', 0.0)
-                        })
-                
+                        edges.append(
+                            {
+                                "from": rel.start_node["function_id"],
+                                "to": rel.end_node["function_id"],
+                                "type": rel.type,
+                                "confidence": rel.get("confidence", 0.0),
+                            }
+                        )
+
                 return {
-                    'nodes': [{'id': n[0], 'name': n[1], 'type': n[2]} for n in nodes],
-                    'edges': edges
+                    "nodes": [{"id": n[0], "name": n[1], "type": n[2]} for n in nodes],
+                    "edges": edges,
                 }
-                
+
         except Exception as e:
             logger.error(f"Call graph query failed: {e}")
-            return {'nodes': [], 'edges': []}
-    
+            return {"nodes": [], "edges": []}
+
     def get_repository_stats(self, repo_id: str, tenant_id: str) -> Dict[str, Any]:
         """Get repository statistics"""
         cypher = """
@@ -471,39 +482,39 @@ class Neo4jService:
                count(DISTINCT m) as module_count,
                avg(func.complexity_score) as avg_complexity
         """
-        
+
         try:
             with self.driver.session() as session:
                 result = session.run(cypher, repo_id=repo_id, tenant_id=tenant_id)
                 record = result.single()
-                
+
                 if record:
                     return {
-                        'file_count': record['file_count'],
-                        'function_count': record['function_count'],
-                        'class_count': record['class_count'],
-                        'module_count': record['module_count'],
-                        'avg_complexity': record['avg_complexity'] or 0
+                        "file_count": record["file_count"],
+                        "function_count": record["function_count"],
+                        "class_count": record["class_count"],
+                        "module_count": record["module_count"],
+                        "avg_complexity": record["avg_complexity"] or 0,
                     }
                 else:
                     return {
-                        'file_count': 0,
-                        'function_count': 0,
-                        'class_count': 0,
-                        'module_count': 0,
-                        'avg_complexity': 0
+                        "file_count": 0,
+                        "function_count": 0,
+                        "class_count": 0,
+                        "module_count": 0,
+                        "avg_complexity": 0,
                     }
-                    
+
         except Exception as e:
             logger.error(f"Repository stats query failed: {e}")
             return {
-                'file_count': 0,
-                'function_count': 0,
-                'class_count': 0,
-                'module_count': 0,
-                'avg_complexity': 0
+                "file_count": 0,
+                "function_count": 0,
+                "class_count": 0,
+                "module_count": 0,
+                "avg_complexity": 0,
             }
-    
+
     def delete_repository(self, repo_id: str, tenant_id: str) -> bool:
         """Delete repository and all related data"""
         cypher = """
@@ -522,17 +533,17 @@ class Neo4jService:
         MATCH (s:Symbol {repo_id: $repo_id, tenant_id: $tenant_id})
         DETACH DELETE s
         """
-        
+
         try:
             with self.driver.session() as session:
                 result = session.run(cypher, repo_id=repo_id, tenant_id=tenant_id)
                 result.consume()
                 return True
-                
+
         except Exception as e:
             logger.error(f"Repository deletion failed: {e}")
             return False
-    
+
     def create_audit_event(self, event: Dict[str, Any]) -> bool:
         """Create audit event"""
         cypher = """
@@ -545,27 +556,30 @@ class Neo4jService:
             timestamp: datetime($timestamp)
         })
         """
-        
+
         try:
             with self.driver.session() as session:
                 session.run(cypher, **event)
                 return True
-                
+
         except Exception as e:
             logger.error(f"Audit event creation failed: {e}")
             return False
 
+
 class GraphService:
     """High-level graph service for RepoLens operations"""
-    
+
     def __init__(self, neo4j_service: Neo4jService):
         self.neo4j = neo4j_service
-    
-    def index_repository(self, repo_data: Dict[str, Any], parsed_files: Dict[str, Any]) -> Dict[str, Any]:
+
+    def index_repository(
+        self, repo_data: Dict[str, Any], parsed_files: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Index entire repository into graph"""
-        tenant_id = repo_data['tenant_id']
-        repo_id = repo_data['repo_id']
-        
+        tenant_id = repo_data["tenant_id"]
+        repo_id = repo_data["repo_id"]
+
         # Create repository node
         repo_cypher = """
         MERGE (r:Repo {tenant_id: $tenant_id, repo_id: $repo_id})
@@ -575,92 +589,97 @@ class GraphService:
             r.created_at = datetime(),
             r.last_indexed_at = datetime()
         """
-        
+
         with self.neo4j.driver.session() as session:
             session.run(repo_cypher, **repo_data)
-        
+
         # Bulk upsert files and functions
         functions = []
         classes = []
-        
+
         for file_path, parsed_file in parsed_files.items():
-            if parsed_file['status'] == 'parsed':
+            if parsed_file["status"] == "parsed":
                 # Prepare function data
-                for func in parsed_file['functions']:
-                    functions.append({
-                        'tenant_id': tenant_id,
-                        'repo_id': repo_id,
-                        'file_path': file_path,
-                        'language': parsed_file['language'],
-                        'file_hash': parsed_file['file_hash'],
-                        'qualified_name': func['qualified_name'],
-                        'name': func['name'],
-                        'signature': func['signature'],
-                        'start_line': func['start_line'],
-                        'end_line': func['end_line'],
-                        'code_hash': func['code_hash'],
-                        'snippet_s3_path': func['snippet_s3_path'],
-                        'summary_det': func['summary_det'],
-                        'complexity_score': func['complexity_score']
-                    })
-                
+                for func in parsed_file["functions"]:
+                    functions.append(
+                        {
+                            "tenant_id": tenant_id,
+                            "repo_id": repo_id,
+                            "file_path": file_path,
+                            "language": parsed_file["language"],
+                            "file_hash": parsed_file["file_hash"],
+                            "qualified_name": func["qualified_name"],
+                            "name": func["name"],
+                            "signature": func["signature"],
+                            "start_line": func["start_line"],
+                            "end_line": func["end_line"],
+                            "code_hash": func["code_hash"],
+                            "snippet_s3_path": func["snippet_s3_path"],
+                            "summary_det": func["summary_det"],
+                            "complexity_score": func["complexity_score"],
+                        }
+                    )
+
                 # Prepare class data
-                for cls in parsed_file['classes']:
-                    classes.append({
-                        'tenant_id': tenant_id,
-                        'repo_id': repo_id,
-                        'file_path': file_path,
-                        'language': parsed_file['language'],
-                        'file_hash': parsed_file['file_hash'],
-                        'qualified_name': cls['qualified_name'],
-                        'name': cls['name'],
-                        'start_line': cls['start_line'],
-                        'end_line': cls['end_line'],
-                        'base_classes': cls['base_classes'],
-                        'docstring': cls['docstring']
-                    })
-        
+                for cls in parsed_file["classes"]:
+                    classes.append(
+                        {
+                            "tenant_id": tenant_id,
+                            "repo_id": repo_id,
+                            "file_path": file_path,
+                            "language": parsed_file["language"],
+                            "file_hash": parsed_file["file_hash"],
+                            "qualified_name": cls["qualified_name"],
+                            "name": cls["name"],
+                            "start_line": cls["start_line"],
+                            "end_line": cls["end_line"],
+                            "base_classes": cls["base_classes"],
+                            "docstring": cls["docstring"],
+                        }
+                    )
+
         # Execute bulk operations
         func_result = self.neo4j.bulk_upsert_functions(functions, tenant_id)
         class_result = self.neo4j.bulk_upsert_classes(classes, tenant_id)
-        
+
         return {
-            'repository_id': repo_id,
-            'functions_indexed': func_result.nodes_created,
-            'classes_indexed': class_result.nodes_created,
-            'total_operations': func_result.duration_ms + class_result.duration_ms,
-            'errors': func_result.errors + class_result.errors
+            "repository_id": repo_id,
+            "functions_indexed": func_result.nodes_created,
+            "classes_indexed": class_result.nodes_created,
+            "total_operations": func_result.duration_ms + class_result.duration_ms,
+            "errors": func_result.errors + class_result.errors,
         }
+
 
 if __name__ == "__main__":
     # Test Neo4j service
     neo4j_service = Neo4jService(
         uri=os.getenv("NEO4J_URI", "bolt://localhost:7687"),
         user=os.getenv("NEO4J_USER", "neo4j"),
-        password=os.getenv("NEO4J_PASSWORD", "password")
+        password=os.getenv("NEO4J_PASSWORD", "password"),
     )
-    
+
     # Test bulk upsert
     test_functions = [
         {
-            'tenant_id': 'test_tenant',
-            'repo_id': 'test_repo',
-            'file_path': 'src/main.py',
-            'language': 'python',
-            'file_hash': 'abc123',
-            'qualified_name': 'main.hello',
-            'name': 'hello',
-            'signature': 'def hello(name: str) -> str:',
-            'start_line': 1,
-            'end_line': 5,
-            'code_hash': 'def123',
-            'snippet_s3_path': 's3://bucket/snippet.json',
-            'summary_det': 'Hello function',
-            'complexity_score': 1
+            "tenant_id": "test_tenant",
+            "repo_id": "test_repo",
+            "file_path": "src/main.py",
+            "language": "python",
+            "file_hash": "abc123",
+            "qualified_name": "main.hello",
+            "name": "hello",
+            "signature": "def hello(name: str) -> str:",
+            "start_line": 1,
+            "end_line": 5,
+            "code_hash": "def123",
+            "snippet_s3_path": "s3://bucket/snippet.json",
+            "summary_det": "Hello function",
+            "complexity_score": 1,
         }
     ]
-    
-    result = neo4j_service.bulk_upsert_functions(test_functions, 'test_tenant')
+
+    result = neo4j_service.bulk_upsert_functions(test_functions, "test_tenant")
     print(f"Bulk upsert result: {result}")
-    
+
     neo4j_service.close()

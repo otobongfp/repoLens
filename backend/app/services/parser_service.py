@@ -1,20 +1,3 @@
-# RepoLens Service - Parser_Service Business Logic
-#
-# Copyright (C) 2024 RepoLens Contributors
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Affero General Public License for more details.
-#
-# You should have received a copy of the GNU Affero General Public License
-# along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
 # RepoLens Parser Service
 # Tree-sitter based code parsing with multi-language support
 
@@ -26,7 +9,6 @@ from pathlib import Path
 from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
 from datetime import datetime, timezone
-import boto3
 
 # Tree-sitter imports
 try:
@@ -45,456 +27,317 @@ except ImportError as e:
 
 logger = logging.getLogger(__name__)
 
+
 @dataclass
 class CodeSnippet:
-    """Code snippet with metadata"""
-    snippet_id: str
     file_path: str
-    start_line: int
-    end_line: int
     content: str
     language: str
-    snippet_type: str
-    metadata: Dict[str, Any]
-    content_hash: str
-
-@dataclass
-class Function:
-    """Function definition"""
-    function_id: str
-    name: str
-    signature: str
-    start_line: int
-    end_line: int
-    parameters: List[str]
-    return_type: Optional[str]
-    docstring: Optional[str]
-    complexity: int
-    snippet: CodeSnippet
-
-@dataclass
-class ParsedFile:
-    """Parsed file result"""
-    file_id: str
-    file_path: str
-    language: str
-    file_hash: str
-    status: str
-    functions: List[Function]
+    functions: List[Dict[str, Any]]
     classes: List[Dict[str, Any]]
-    imports: List[Dict[str, Any]]
-    ast_s3_path: str
-    errors: List[str]
+    imports: List[str]
+    complexity_score: int
+    lines_of_code: int
+    docstring: Optional[str] = None
 
-class TreeSitterParser:
-    """Tree-sitter parser for multiple languages"""
-    
-    def __init__(self, s3_client: Optional[boto3.client] = None):
-        self.s3_client = s3_client
-        self.languages = {}
-        self.parsers = {}
-        self._init_languages()
-        self._init_parsers()
-    
-    def _init_languages(self):
-        """Initialize language grammars"""
-        configs = {
-            'python': {
-                'module': tspython,
-                'extensions': ['.py'],
-                'queries': {
-                    'functions': '(function_definition name: (identifier) @name)',
-                    'classes': '(class_definition name: (identifier) @name)',
-                    'imports': '(import_statement) @import'
-                }
-            },
-            'javascript': {
-                'module': tsjavascript,
-                'extensions': ['.js', '.jsx'],
-                'queries': {
-                    'functions': '(function_declaration name: (identifier) @name)',
-                    'classes': '(class_declaration name: (identifier) @name)',
-                    'imports': '(import_statement) @import'
-                }
-            },
-            'typescript': {
-                'module': tstypescript,
-                'extensions': ['.ts', '.tsx'],
-                'queries': {
-                    'functions': '(function_declaration name: (identifier) @name)',
-                    'classes': '(class_declaration name: (identifier) @name)',
-                    'imports': '(import_statement) @import'
-                }
-            }
-        }
-        
-        for lang_name, config in configs.items():
-            try:
-                language = Language(config['module'].language())
-                self.languages[lang_name] = {
-                    'language': language,
-                    'extensions': config['extensions'],
-                    'queries': config['queries']
-                }
-                logger.info(f"Initialized {lang_name} parser")
-            except Exception as e:
-                logger.warning(f"Failed to initialize {lang_name}: {e}")
-    
-    def _init_parsers(self):
-        """Initialize parsers"""
-        for lang_name, lang_config in self.languages.items():
-            parser = Parser()
-            parser.set_language(lang_config['language'])
-            self.parsers[lang_name] = parser
-    
-    def detect_language(self, file_path: str) -> Optional[str]:
-        """Detect language from file extension"""
-        ext = Path(file_path).suffix.lower()
-        
-        for lang_name, lang_config in self.languages.items():
-            if ext in lang_config['extensions']:
-                return lang_name
-        
-        return None
-    
-    def parse_file(self, file_path: str, content: str) -> ParsedFile:
-        """Parse a file and extract code elements"""
-        language = self.detect_language(file_path)
-        if not language:
-            return self._create_failed_parse(file_path, f"Unsupported language")
-        
-        try:
-            parser = self.parsers[language]
-            tree = parser.parse(bytes(content, 'utf8'))
-            
-            if not tree.root_node:
-                return self._create_failed_parse(file_path, "Parse failed")
-            
-            functions = self._extract_functions(tree.root_node, file_path, content, language)
-            classes = self._extract_classes(tree.root_node, file_path, content, language)
-            imports = self._extract_imports(tree.root_node, file_path, content, language)
-            
-            ast_json = self._create_ast_json(tree.root_node, file_path)
-            ast_s3_path = self._upload_ast(file_path, ast_json)
-            
-            file_hash = hashlib.sha256(content.encode('utf8')).hexdigest()
-            
-            return ParsedFile(
-                file_id=self._generate_id(file_path),
-                file_path=file_path,
-                language=language,
-                file_hash=file_hash,
-                status="parsed",
-                functions=functions,
-                classes=classes,
-                imports=imports,
-                ast_s3_path=ast_s3_path,
-                errors=[]
-            )
-            
-        except Exception as e:
-            logger.error(f"Error parsing {file_path}: {e}")
-            return self._create_failed_parse(file_path, str(e))
-    
-    def _extract_functions(self, root_node: Node, file_path: str, content: str, language: str) -> List[Function]:
-        """Extract functions from AST"""
-        functions = []
-        lines = content.split('\n')
-        
-        if language == 'python':
-            functions = self._extract_python_functions(root_node, file_path, lines)
-        elif language in ['javascript', 'typescript']:
-            functions = self._extract_js_functions(root_node, file_path, lines)
-        
-        return functions
-    
-    def _extract_python_functions(self, root_node: Node, file_path: str, lines: List[str]) -> List[Function]:
-        """Extract Python functions"""
-        functions = []
-        
-        def traverse(node: Node):
-            if node.type == 'function_definition':
-                name_node = node.child_by_field_name('name')
-                if name_node:
-                    name = name_node.text.decode('utf8')
-                    
-                    # Extract parameters
-                    parameters = []
-                    params_node = node.child_by_field_name('parameters')
-                    if params_node:
-                        for child in params_node.children:
-                            if child.type == 'identifier':
-                                parameters.append(child.text.decode('utf8'))
-                    
-                    # Extract docstring
-                    docstring = None
-                    body = node.child_by_field_name('body')
-                    if body and len(body.children) > 0:
-                        first_stmt = body.children[0]
-                        if first_stmt.type == 'expression_statement':
-                            expr = first_stmt.children[0]
-                            if expr.type == 'string':
-                                docstring = expr.text.decode('utf8').strip('"\'')
-                    
-                    # Create snippet
-                    start_line = node.start_point[0] + 1
-                    end_line = node.end_point[0] + 1
-                    snippet_content = '\n'.join(lines[start_line-1:end_line])
-                    
-                    snippet = CodeSnippet(
-                        snippet_id=self._generate_id(f"{file_path}:{name}"),
-                        file_path=file_path,
-                        start_line=start_line,
-                        end_line=end_line,
-                        content=snippet_content,
-                        language='python',
-                        snippet_type='function',
-                        metadata={'parameters': parameters},
-                        content_hash=hashlib.sha256(snippet_content.encode('utf8')).hexdigest()
-                    )
-                    
-                    complexity = self._calculate_complexity(node)
-                    
-                    function = Function(
-                        function_id=self._generate_id(f"{file_path}:{name}"),
-                        name=name,
-                        signature=f"def {name}({', '.join(parameters)})",
-                        start_line=start_line,
-                        end_line=end_line,
-                        parameters=parameters,
-                        return_type=None,
-                        docstring=docstring,
-                        complexity=complexity,
-                        snippet=snippet
-                    )
-                    
-                    functions.append(function)
-            
-            for child in node.children:
-                traverse(child)
-        
-        traverse(root_node)
-        return functions
-    
-    def _extract_js_functions(self, root_node: Node, file_path: str, lines: List[str]) -> List[Function]:
-        """Extract JavaScript/TypeScript functions"""
-        functions = []
-        
-        def traverse(node: Node):
-            if node.type in ['function_declaration', 'method_definition']:
-                name_node = node.child_by_field_name('name')
-                if name_node:
-                    name = name_node.text.decode('utf8')
-                    
-                    # Extract parameters
-                    parameters = []
-                    params_node = node.child_by_field_name('parameters')
-                    if params_node:
-                        for child in params_node.children:
-                            if child.type == 'identifier':
-                                parameters.append(child.text.decode('utf8'))
-                    
-                    # Create snippet
-                    start_line = node.start_point[0] + 1
-                    end_line = node.end_point[0] + 1
-                    snippet_content = '\n'.join(lines[start_line-1:end_line])
-                    
-                    snippet = CodeSnippet(
-                        snippet_id=self._generate_id(f"{file_path}:{name}"),
-                        file_path=file_path,
-                        start_line=start_line,
-                        end_line=end_line,
-                        content=snippet_content,
-                        language='javascript',
-                        snippet_type='function',
-                        metadata={'parameters': parameters},
-                        content_hash=hashlib.sha256(snippet_content.encode('utf8')).hexdigest()
-                    )
-                    
-                    complexity = self._calculate_complexity(node)
-                    
-                    function = Function(
-                        function_id=self._generate_id(f"{file_path}:{name}"),
-                        name=name,
-                        signature=f"function {name}({', '.join(parameters)})",
-                        start_line=start_line,
-                        end_line=end_line,
-                        parameters=parameters,
-                        return_type=None,
-                        docstring=None,
-                        complexity=complexity,
-                        snippet=snippet
-                    )
-                    
-                    functions.append(function)
-            
-            for child in node.children:
-                traverse(child)
-        
-        traverse(root_node)
-        return functions
-    
-    def _extract_classes(self, root_node: Node, file_path: str, content: str, language: str) -> List[Dict[str, Any]]:
-        """Extract class definitions"""
-        # TODO: Implement class extraction
-        return []
-    
-    def _extract_imports(self, root_node: Node, file_path: str, content: str, language: str) -> List[Dict[str, Any]]:
-        """Extract import statements"""
-        # TODO: Implement import extraction
-        return []
-    
-    def _calculate_complexity(self, node: Node) -> int:
-        """Calculate cyclomatic complexity"""
-        complexity = 1
-        
-        def traverse(n: Node):
-            nonlocal complexity
-            if n.type in ['if_statement', 'while_statement', 'for_statement']:
-                complexity += 1
-            for child in n.children:
-                traverse(child)
-        
-        traverse(node)
-        return complexity
-    
-    def _create_ast_json(self, root_node: Node, file_path: str) -> Dict[str, Any]:
-        """Create AST JSON"""
-        def node_to_dict(node: Node) -> Dict[str, Any]:
-            return {
-                'type': node.type,
-                'text': node.text.decode('utf8'),
-                'start_point': node.start_point,
-                'end_point': node.end_point,
-                'children': [node_to_dict(child) for child in node.children]
-            }
-        
-        return {
-            'file_path': file_path,
-            'ast': node_to_dict(root_node),
-            'created_at': datetime.now(timezone.utc).isoformat()
-        }
-    
-    def _upload_ast(self, file_path: str, ast_json: Dict[str, Any]) -> str:
-        """Upload AST to S3"""
-        if not self.s3_client:
-            return f"mock_s3_path/{file_path}.ast.json"
-        
-        try:
-            s3_key = f"ast/{file_path}.ast.json"
-            self.s3_client.put_object(
-                Bucket=os.getenv('S3_BUCKET', 'repolens'),
-                Key=s3_key,
-                Body=json.dumps(ast_json, indent=2),
-                ContentType='application/json'
-            )
-            return f"s3://{os.getenv('S3_BUCKET', 'repolens')}/{s3_key}"
-        except Exception as e:
-            logger.error(f"Failed to upload AST: {e}")
-            return f"mock_s3_path/{file_path}.ast.json"
-    
-    def _create_failed_parse(self, file_path: str, error: str) -> ParsedFile:
-        """Create failed parse result"""
-        return ParsedFile(
-            file_id=self._generate_id(file_path),
-            file_path=file_path,
-            language="unknown",
-            file_hash="",
-            status="failed",
-            functions=[],
-            classes=[],
-            imports=[],
-            ast_s3_path="",
-            errors=[error]
-        )
-    
-    def _generate_id(self, text: str) -> str:
-        """Generate unique ID"""
-        return hashlib.sha256(text.encode('utf8')).hexdigest()[:16]
 
 class ParserService:
-    """Parser service with batch processing"""
-    
-    def __init__(self, s3_client: Optional[boto3.client] = None):
-        self.parser = TreeSitterParser(s3_client)
-        self.results: Dict[str, ParsedFile] = {}
-    
-    def parse_repository(self, repo_path: str) -> Dict[str, ParsedFile]:
-        """Parse entire repository"""
-        repo_path = Path(repo_path)
-        parsed_files = {}
-        
-        # Get supported extensions
-        supported_extensions = set()
-        for lang_config in self.parser.languages.values():
-            supported_extensions.update(lang_config['extensions'])
-        
-        for file_path in repo_path.rglob('*'):
-            if file_path.is_file() and file_path.suffix.lower() in supported_extensions:
-                try:
-                    content = file_path.read_text(encoding='utf8', errors='ignore')
-                    relative_path = str(file_path.relative_to(repo_path))
-                    
-                    parsed_file = self.parser.parse_file(relative_path, content)
-                    parsed_files[relative_path] = parsed_file
-                    
-                    logger.info(f"Parsed {relative_path}: {len(parsed_file.functions)} functions")
-                    
-                except Exception as e:
-                    logger.error(f"Failed to parse {file_path}: {e}")
-                    parsed_files[str(file_path.relative_to(repo_path))] = self.parser._create_failed_parse(
-                        str(file_path.relative_to(repo_path)), str(e)
-                    )
-        
-        self.results.update(parsed_files)
-        return parsed_files
-    
-    def get_stats(self) -> Dict[str, Any]:
-        """Get parsing statistics"""
-        total_files = len(self.results)
-        successful = sum(1 for f in self.results.values() if f.status == "parsed")
-        failed = total_files - successful
-        
-        total_functions = sum(len(f.functions) for f in self.results.values())
-        
-        language_stats = {}
-        for parsed_file in self.results.values():
-            lang = parsed_file.language
-            if lang not in language_stats:
-                language_stats[lang] = {'files': 0, 'functions': 0}
-            language_stats[lang]['files'] += 1
-            language_stats[lang]['functions'] += len(parsed_file.functions)
-        
-        return {
-            'total_files': total_files,
-            'successful': successful,
-            'failed': failed,
-            'success_rate': successful / total_files if total_files > 0 else 0,
-            'total_functions': total_functions,
-            'language_stats': language_stats
+    def __init__(self):
+        self.supported_languages = {
+            "python": {"extensions": [".py"], "parser": None},
+            "javascript": {"extensions": [".js"], "parser": None},
+            "typescript": {"extensions": [".ts", ".tsx"], "parser": None},
+            "java": {"extensions": [".java"], "parser": None},
+            "cpp": {"extensions": [".cpp", ".cc", ".cxx"], "parser": None},
+            "c": {"extensions": [".c"], "parser": None},
+            "go": {"extensions": [".go"], "parser": None},
+            "rust": {"extensions": [".rs"], "parser": None},
+            "php": {"extensions": [".php"], "parser": None},
+            "ruby": {"extensions": [".rb"], "parser": None},
+            "swift": {"extensions": [".swift"], "parser": None},
+            "kotlin": {"extensions": [".kt"], "parser": None},
         }
+        self._initialize_parsers()
 
-if __name__ == "__main__":
-    # Test parser
-    parser_service = ParserService()
-    
-    sample_code = '''
-def hello_world(name: str) -> str:
-    """A simple hello world function"""
-    return f"Hello, {name}!"
+    def _initialize_parsers(self):
+        """Initialize tree-sitter parsers for supported languages"""
+        try:
+            if "tspython" in globals():
+                python_language = Language(tspython.language())
+                self.supported_languages["python"]["parser"] = python_language
 
-class Calculator:
-    """A simple calculator class"""
-    
-    def add(self, a: int, b: int) -> int:
-        return a + b
-'''
-    
-    parsed_file = parser_service.parser.parse_file("test.py", sample_code)
-    print(f"Parsed file: {parsed_file.file_path}")
-    print(f"Functions: {len(parsed_file.functions)}")
-    
-    for func in parsed_file.functions:
-        print(f"  Function: {func.name} - {func.signature}")
-        print(f"    Complexity: {func.complexity}")
-        print(f"    Docstring: {func.docstring}")
+            if "tsjavascript" in globals():
+                js_language = Language(tsjavascript.language())
+                self.supported_languages["javascript"]["parser"] = js_language
+
+            if "tstypescript" in globals():
+                ts_language = Language(tstypescript.language())
+                self.supported_languages["typescript"]["parser"] = ts_language
+
+        except Exception as e:
+            logger.warning(f"Failed to initialize some parsers: {e}")
+
+    def get_language_from_extension(self, file_path: str) -> Optional[str]:
+        """Get language from file extension"""
+        ext = Path(file_path).suffix.lower()
+        for lang, config in self.supported_languages.items():
+            if ext in config["extensions"]:
+                return lang
+        return None
+
+    def parse_file(self, file_path: str, content: str) -> CodeSnippet:
+        """Parse a single file and extract code structure"""
+        language = self.get_language_from_extension(file_path)
+        if not language:
+            return CodeSnippet(
+                file_path=file_path,
+                content=content,
+                language="unknown",
+                functions=[],
+                classes=[],
+                imports=[],
+                complexity_score=0,
+                lines_of_code=len(content.splitlines()),
+            )
+
+        try:
+            if language == "python":
+                return self._parse_python(file_path, content)
+            elif language in ["javascript", "typescript"]:
+                return self._parse_javascript_typescript(file_path, content, language)
+            else:
+                return self._parse_generic(file_path, content, language)
+        except Exception as e:
+            logger.error(f"Failed to parse {file_path}: {e}")
+            return CodeSnippet(
+                file_path=file_path,
+                content=content,
+                language=language,
+                functions=[],
+                classes=[],
+                imports=[],
+                complexity_score=0,
+                lines_of_code=len(content.splitlines()),
+            )
+
+    def _parse_python(self, file_path: str, content: str) -> CodeSnippet:
+        """Parse Python files using tree-sitter"""
+        functions = []
+        classes = []
+        imports = []
+
+        try:
+            language = self.supported_languages["python"]["parser"]
+            if not language:
+                return self._parse_generic(file_path, content, "python")
+
+            parser = Parser()
+            parser.set_language(language)
+            tree = parser.parse(bytes(content, "utf8"))
+
+            def traverse_node(node: Node, depth: int = 0):
+                if node.type == "function_definition":
+                    func_name = None
+                    for child in node.children:
+                        if child.type == "identifier":
+                            func_name = child.text.decode("utf8")
+                            break
+
+                    if func_name:
+                        functions.append(
+                            {
+                                "name": func_name,
+                                "signature": node.text.decode("utf8")[:100],
+                                "complexity": depth + 1,
+                                "line_start": node.start_point[0] + 1,
+                                "line_end": node.end_point[0] + 1,
+                            }
+                        )
+
+                elif node.type == "class_definition":
+                    class_name = None
+                    for child in node.children:
+                        if child.type == "identifier":
+                            class_name = child.text.decode("utf8")
+                            break
+
+                    if class_name:
+                        classes.append(
+                            {
+                                "name": class_name,
+                                "line_start": node.start_point[0] + 1,
+                                "line_end": node.end_point[0] + 1,
+                            }
+                        )
+
+                elif (
+                    node.type == "import_statement"
+                    or node.type == "import_from_statement"
+                ):
+                    imports.append(node.text.decode("utf8").strip())
+
+                for child in node.children:
+                    traverse_node(child, depth + 1)
+
+            traverse_node(tree.root_node)
+
+        except Exception as e:
+            logger.error(f"Python parsing failed for {file_path}: {e}")
+
+        return CodeSnippet(
+            file_path=file_path,
+            content=content,
+            language="python",
+            functions=functions,
+            classes=classes,
+            imports=imports,
+            complexity_score=len(functions) + len(classes),
+            lines_of_code=len(content.splitlines()),
+        )
+
+    def _parse_javascript_typescript(
+        self, file_path: str, content: str, language: str
+    ) -> CodeSnippet:
+        """Parse JavaScript/TypeScript files"""
+        functions = []
+        classes = []
+        imports = []
+
+        # Simple regex-based parsing for JS/TS
+        import re
+
+        # Find function declarations
+        func_pattern = r"(?:function\s+(\w+)|(?:const|let|var)\s+(\w+)\s*=\s*(?:async\s+)?(?:function|\([^)]*\)\s*=>))"
+        for match in re.finditer(func_pattern, content):
+            func_name = match.group(1) or match.group(2)
+            if func_name:
+                functions.append(
+                    {
+                        "name": func_name,
+                        "signature": match.group(0)[:100],
+                        "complexity": 1,
+                        "line_start": content[: match.start()].count("\n") + 1,
+                        "line_end": content[: match.end()].count("\n") + 1,
+                    }
+                )
+
+        # Find class declarations
+        class_pattern = r"class\s+(\w+)"
+        for match in re.finditer(class_pattern, content):
+            classes.append(
+                {
+                    "name": match.group(1),
+                    "line_start": content[: match.start()].count("\n") + 1,
+                    "line_end": content[: match.end()].count("\n") + 1,
+                }
+            )
+
+        # Find imports
+        import_pattern = r"(?:import|require)\s+.*?;"
+        for match in re.finditer(import_pattern, content):
+            imports.append(match.group(0).strip())
+
+        return CodeSnippet(
+            file_path=file_path,
+            content=content,
+            language=language,
+            functions=functions,
+            classes=classes,
+            imports=imports,
+            complexity_score=len(functions) + len(classes),
+            lines_of_code=len(content.splitlines()),
+        )
+
+    def _parse_generic(
+        self, file_path: str, content: str, language: str
+    ) -> CodeSnippet:
+        """Generic parsing for unsupported languages"""
+        functions = []
+        classes = []
+        imports = []
+
+        lines = content.splitlines()
+        for i, line in enumerate(lines):
+            line = line.strip()
+
+            # Simple heuristics for different languages
+            if language in ["java", "cpp", "c"]:
+                if "class " in line and "{" in line:
+                    class_name = line.split("class ")[1].split()[0]
+                    classes.append(
+                        {"name": class_name, "line_start": i + 1, "line_end": i + 1}
+                    )
+                elif "(" in line and ")" in line and "{" in line:
+                    func_name = line.split("(")[0].split()[-1]
+                    functions.append(
+                        {
+                            "name": func_name,
+                            "signature": line,
+                            "complexity": 1,
+                            "line_start": i + 1,
+                            "line_end": i + 1,
+                        }
+                    )
+
+            elif language == "go":
+                if "func " in line:
+                    func_name = line.split("func ")[1].split("(")[0]
+                    functions.append(
+                        {
+                            "name": func_name,
+                            "signature": line,
+                            "complexity": 1,
+                            "line_start": i + 1,
+                            "line_end": i + 1,
+                        }
+                    )
+                elif "type " in line and "struct" in line:
+                    class_name = line.split("type ")[1].split()[0]
+                    classes.append(
+                        {"name": class_name, "line_start": i + 1, "line_end": i + 1}
+                    )
+
+        return CodeSnippet(
+            file_path=file_path,
+            content=content,
+            language=language,
+            functions=functions,
+            classes=classes,
+            imports=imports,
+            complexity_score=len(functions) + len(classes),
+            lines_of_code=len(lines),
+        )
+
+    def parse_repository(self, repo_path: str) -> List[CodeSnippet]:
+        """Parse entire repository and return list of code snippets"""
+        snippets = []
+        repo_path = Path(repo_path)
+
+        if not repo_path.exists():
+            logger.error(f"Repository path does not exist: {repo_path}")
+            return snippets
+
+        for file_path in repo_path.rglob("*"):
+            if file_path.is_file():
+                language = self.get_language_from_extension(str(file_path))
+                if language:
+                    try:
+                        with open(
+                            file_path, "r", encoding="utf-8", errors="ignore"
+                        ) as f:
+                            content = f.read()
+
+                        snippet = self.parse_file(str(file_path), content)
+                        snippets.append(snippet)
+
+                    except Exception as e:
+                        logger.warning(f"Failed to read {file_path}: {e}")
+
+        return snippets
+
+    def get_supported_extensions(self) -> Dict[str, List[str]]:
+        """Get all supported file extensions"""
+        return {
+            lang: config["extensions"]
+            for lang, config in self.supported_languages.items()
+        }

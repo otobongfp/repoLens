@@ -82,3 +82,6 @@ dmypy.json
 
 # Custom build outputs
 build/
+
+# Storage content
+storage/

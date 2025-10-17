@@ -82,3 +82,11 @@ uvicorn app.main:app --reload
 
 - If AI analysis is disabled, check your OpenAI API key and environment variables.
 - For code parsing issues, ensure the correct pre-built Tree-sitter packages are installed.
+
+
+## 9. Migration - Working with Alembic
+- alembic init --template pyproject alembic # Add base connection to env.py, update .toml, .ini
+- alembic revision -m "name_of_migration" # manual migration
+- alembic revision --autogenerate -m "init db"
+- alembic upgrade head
+- alembic downgrade -1

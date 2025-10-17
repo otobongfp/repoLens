@@ -1,20 +1,4 @@
 # RepoLens Database - Connection Models
-#
-# Copyright (C) 2024 RepoLens Contributors
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Affero General Public License for more details.
-#
-# You should have received a copy of the GNU Affero General Public License
-# along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
 # Database connection and session management
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
@@ -39,9 +23,12 @@ AsyncSessionLocal = async_sessionmaker(
     expire_on_commit=False,
 )
 
+
 class Base(DeclarativeBase):
     """Base class for all database models"""
+
     pass
+
 
 async def get_db() -> AsyncSession:
     """Dependency to get database session"""
@@ -54,13 +41,16 @@ async def get_db() -> AsyncSession:
         finally:
             await session.close()
 
+
 async def init_db():
     """Initialize database tables"""
     async with engine.begin() as conn:
         # Import all models here to ensure they are registered
         from app.database.models import user, tenant, project, analysis
+
         await conn.run_sync(Base.metadata.create_all)
         logger.info("Database tables created successfully")
+
 
 async def close_db():
     """Close database connections"""

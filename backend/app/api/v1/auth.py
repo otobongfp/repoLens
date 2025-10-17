@@ -1,20 +1,4 @@
 # RepoLens API - Auth Endpoints
-#
-# Copyright (C) 2024 RepoLens Contributors
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Affero General Public License for more details.
-#
-# You should have received a copy of the GNU Affero General Public License
-# along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
 # Authentication API routes
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -32,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(
     prefix="/auth",
-    tags=["🔐 Authentication"],
+    tags=["Authentication"],
     responses={401: {"description": "Authentication failed"}}
 )
 
@@ -81,16 +65,14 @@ async def get_current_user(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+            headers={"WWW-Authenticate": "Bearer"})
     
     user_id = payload.get("sub")
     if not user_id:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token payload",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+            headers={"WWW-Authenticate": "Bearer"})
     
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
@@ -99,20 +81,15 @@ async def get_current_user(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not found or inactive",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+            headers={"WWW-Authenticate": "Bearer"})
     
     return user
 
 @router.post(
     "/register",
     response_model=TokenResponse,
-    summary="📝 Register New User",
-    description="""
-    **Register a new user with email and password**
-    
-    Creates a new user account and returns authentication tokens.
-    """,
+    summary="Register New User",
+    description="""""",
     responses={
         201: {"description": "User registered successfully"},
         400: {"description": "Invalid registration data"},
@@ -160,12 +137,8 @@ async def register_user(
 @router.post(
     "/login",
     response_model=TokenResponse,
-    summary="🔑 Login User",
-    description="""
-    **Authenticate user with email and password**
-    
-    Returns authentication tokens for valid credentials.
-    """,
+    summary="Login User",
+    description="Authenticate user and return tokens",
     responses={
         200: {"description": "Login successful"},
         401: {"description": "Invalid credentials"}
@@ -183,8 +156,7 @@ async def login_user(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+            headers={"WWW-Authenticate": "Bearer"})
     
     # Update last login
     await auth_service.update_user_last_login(db, str(user.id))
@@ -210,12 +182,8 @@ class RefreshTokenRequest(BaseModel):
 @router.post(
     "/refresh",
     response_model=TokenResponse,
-    summary="🔄 Refresh Token",
-    description="""
-    **Refresh access token using refresh token**
-    
-    Returns new access token for valid refresh token.
-    """,
+    summary="Refresh Token",
+    description="Refresh access token using refresh token",
     responses={
         200: {"description": "Token refreshed successfully"},
         401: {"description": "Invalid refresh token"}
@@ -246,12 +214,8 @@ async def refresh_token(
 @router.get(
     "/me",
     response_model=UserResponse,
-    summary="👤 Get Current User",
-    description="""
-    **Get current authenticated user information**
-    
-    Returns user profile information for the authenticated user.
-    """,
+    summary="Get Current User",
+    description="Get current user information",
     responses={
         200: {"description": "User information retrieved successfully"},
         401: {"description": "Authentication required"}
@@ -273,12 +237,8 @@ async def get_current_user_info(
 
 @router.post(
     "/logout",
-    summary="🚪 Logout User",
-    description="""
-    **Logout user and revoke session**
-    
-    Revokes the current user session and invalidates tokens.
-    """,
+    summary="Logout User",
+    description="Logout user and revoke session",
     responses={
         200: {"description": "Logout successful"},
         401: {"description": "Authentication required"}
@@ -303,14 +263,10 @@ async def logout_user(
 @router.get(
     "/oauth/google",
     response_model=OAuthUrlResponse,
-    summary="🔗 Google OAuth",
-    description="""
-    **Get Google OAuth authorization URL**
-    
-    Returns the URL to redirect users to for Google OAuth authentication.
-    """,
+    summary="Google OAuth",
+    description="Get Google OAuth authorization URL",
     responses={
-        200: {"description": "Authorization URL generated successfully"},
+        200: {"description": "OAuth URL generated successfully"},
         503: {"description": "Google OAuth not configured"}
     }
 )
@@ -329,14 +285,10 @@ async def get_google_oauth_url():
 @router.get(
     "/oauth/github",
     response_model=OAuthUrlResponse,
-    summary="🔗 GitHub OAuth",
-    description="""
-    **Get GitHub OAuth authorization URL**
-    
-    Returns the URL to redirect users to for GitHub OAuth authentication.
-    """,
+    summary="GitHub OAuth",
+    description="Get GitHub OAuth authorization URL",
     responses={
-        200: {"description": "Authorization URL generated successfully"},
+        200: {"description": "OAuth URL generated successfully"},
         503: {"description": "GitHub OAuth not configured"}
     }
 )
@@ -355,12 +307,8 @@ async def get_github_oauth_url():
 @router.post(
     "/oauth/google/callback",
     response_model=TokenResponse,
-    summary="🔄 Google OAuth Callback",
-    description="""
-    **Handle Google OAuth callback**
-    
-    Processes the OAuth callback from Google and returns authentication tokens.
-    """,
+    summary="Google OAuth Callback",
+    description="Handle Google OAuth callback",
     responses={
         200: {"description": "OAuth authentication successful"},
         400: {"description": "Invalid OAuth code"},
@@ -410,14 +358,9 @@ async def handle_google_callback(
 @router.post(
     "/oauth/github/callback",
     response_model=TokenResponse,
-    summary="🔄 GitHub OAuth Callback",
-    description="""
-    **Handle GitHub OAuth callback**
-    
-    Processes the OAuth callback from GitHub and returns authentication tokens.
-    """,
-    responses={
-        200: {"description": "OAuth authentication successful"},
+    summary="GitHub OAuth Callback",
+    description="""""",
+    responses={},
         400: {"description": "Invalid OAuth code"},
         503: {"description": "GitHub OAuth not configured"}
     }

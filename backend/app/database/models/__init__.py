@@ -1,39 +1,20 @@
 # RepoLens Database - __Init__ Models
-#
-# Copyright (C) 2024 RepoLens Contributors
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Affero General Public License for more details.
-#
-# You should have received a copy of the GNU Affero General Public License
-# along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
 # Database models package initialization
 # Import all models to ensure they are registered with SQLAlchemy
 
-from .user import User, UserAuthProvider, UserSession, AuthProvider, UserRole
-from .tenant import Tenant, TenantMember, TenantMemberRole, Project, TenantPlan, ProjectStatus
-from .analysis import Analysis, AuditLog, AnalysisStatus, AnalysisType
+from .user import User, UserAuthProvider, UserSession
+from .tenant import Tenant, TenantMember
+from .project import Project
+from .analysis import Analysis, AuditLog
 
 # Make all models available for import
 __all__ = [
     "User",
-    "UserAuthProvider", 
+    "UserAuthProvider",
     "UserSession",
-    "AuthProvider",
-    "UserRole",
     "Tenant",
     "TenantMember",
-    "TenantMemberRole",
+    "Project",
     "Analysis",
     "AuditLog",
-    "AnalysisStatus",
-    "AnalysisType",
 ]

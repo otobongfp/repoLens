@@ -1,1 +1,1 @@
-# AI analysis models module 
+# AI analysis models module

@@ -1,20 +1,3 @@
-# RepoLens Service - Action_Service Business Logic
-#
-# Copyright (C) 2024 RepoLens Contributors
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Affero General Public License for more details.
-#
-# You should have received a copy of the GNU Affero General Public License
-# along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
 # RepoLens Action Proposal Service
 # AI-generated code changes with human approval workflow
 
@@ -35,6 +18,7 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
+
 class ProposalStatus(str, Enum):
     DRAFT = "draft"
     SUBMITTED = "submitted"
@@ -43,453 +27,306 @@ class ProposalStatus(str, Enum):
     REJECTED = "rejected"
     NEEDS_HUMAN = "needs_human"
 
+
 @dataclass
 class ActionProposal:
-    """Action proposal with metadata"""
-    proposal_id: str
+    id: str
     tenant_id: str
-    repo_id: str
-    proposer_id: str
-    patch_s3_path: str
-    rationale: str
-    tests_to_run: List[str]
-    estimated_risk: float
+    project_id: str
+    analysis_id: str
+    title: str
+    description: str
+    proposed_changes: List[Dict[str, Any]]
     status: ProposalStatus
+    confidence_score: float
+    reasoning: str
     created_at: datetime
+    updated_at: datetime
     approved_by: Optional[str] = None
-    approved_at: Optional[datetime] = None
+    rejected_reason: Optional[str] = None
 
-@dataclass
-class CodeChange:
-    """Code change representation"""
-    file_path: str
-    change_type: str  # 'add', 'modify', 'delete'
-    old_content: Optional[str]
-    new_content: Optional[str]
-    line_number: int
-    context: str
-
-class ActionGenerator:
-    """AI-powered action generator"""
-    
-    def __init__(self, openai_api_key: str, model: str = "gpt-4"):
-        self.client = openai.OpenAI(api_key=openai_api_key)
-        self.model = model
-        
-        # Exact prompt from directive
-        self.action_prompt = """
-SYSTEM: You are a deterministic code change generator. Given a requirement and a code snippet, generate a minimal, safe diff patch. Do not hallucinate. Only modify the provided snippet. Output must be ONLY valid JSON.
-
-USER: 
-Requirement: <<REQUIREMENT_TEXT>>
-Code Snippet: <<CODE_SNIPPET>>
-File Path: <<FILE_PATH>>
-
-ACTION JSON FORMAT:
-{
-  "file_path": "<file_path>",
-  "change_type": "add|modify|delete",
-  "old_content": "<original content>",
-  "new_content": "<modified content>",
-  "line_number": <line_number>,
-  "context": "<explanation>",
-  "rationale": "<why this change>",
-  "tests_to_run": ["<test1>", "<test2>"],
-  "estimated_risk": 0.0-1.0
-}
-"""
-    
-    def generate_action(self, requirement: str, code_snippet: str, file_path: str) -> Optional[Dict[str, Any]]:
-        """Generate action proposal for requirement"""
-        try:
-            # Replace placeholders in prompt
-            prompt = self.action_prompt.replace("<<REQUIREMENT_TEXT>>", requirement)
-            prompt = prompt.replace("<<CODE_SNIPPET>>", code_snippet)
-            prompt = prompt.replace("<<FILE_PATH>>", file_path)
-            
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": prompt.split("USER:")[0].strip()},
-                    {"role": "user", "content": prompt.split("USER:")[1].strip()}
-                ],
-                max_tokens=2000,
-                temperature=0.1
-            )
-            
-            response_text = response.choices[0].message.content.strip()
-            
-            # Extract JSON from response
-            json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
-            if not json_match:
-                raise ValueError("No JSON found in response")
-            
-            action_data = json.loads(json_match.group())
-            
-            # Validate action data
-            if not self._validate_action(action_data):
-                raise ValueError("Invalid action data")
-            
-            return action_data
-            
-        except Exception as e:
-            logger.error(f"Action generation failed: {e}")
-            return None
-    
-    def _validate_action(self, action_data: Dict[str, Any]) -> bool:
-        """Validate action data"""
-        required_fields = ['file_path', 'change_type', 'rationale', 'estimated_risk']
-        
-        for field in required_fields:
-            if field not in action_data:
-                return False
-        
-        # Validate change_type
-        if action_data['change_type'] not in ['add', 'modify', 'delete']:
-            return False
-        
-        # Validate risk score
-        risk = action_data['estimated_risk']
-        if not isinstance(risk, (int, float)) or not 0.0 <= risk <= 1.0:
-            return False
-        
-        return True
-
-class PatchGenerator:
-    """Patch generation and validation"""
-    
-    def __init__(self, s3_client):
-        self.s3_client = s3_client
-    
-    def generate_patch(self, action_data: Dict[str, Any]) -> str:
-        """Generate unified diff patch"""
-        file_path = action_data['file_path']
-        change_type = action_data['change_type']
-        old_content = action_data.get('old_content', '')
-        new_content = action_data.get('new_content', '')
-        line_number = action_data.get('line_number', 1)
-        
-        # Generate patch header
-        patch_lines = [
-            f"--- a/{file_path}",
-            f"+++ b/{file_path}",
-            f"@@ -{line_number},1 +{line_number},1 @@"
-        ]
-        
-        if change_type == 'add':
-            patch_lines.append(f"+{new_content}")
-        elif change_type == 'modify':
-            patch_lines.append(f"-{old_content}")
-            patch_lines.append(f"+{new_content}")
-        elif change_type == 'delete':
-            patch_lines.append(f"-{old_content}")
-        
-        return '\n'.join(patch_lines)
-    
-    def upload_patch(self, patch_content: str, proposal_id: str) -> str:
-        """Upload patch to S3"""
-        try:
-            s3_key = f"patches/{proposal_id}.patch"
-            self.s3_client.put_object(
-                Bucket=os.getenv('S3_BUCKET', 'repolens'),
-                Key=s3_key,
-                Body=patch_content,
-                ContentType='text/plain'
-            )
-            return f"s3://{os.getenv('S3_BUCKET', 'repolens')}/{s3_key}"
-            
-        except Exception as e:
-            logger.error(f"Failed to upload patch: {e}")
-            return f"mock_s3_path/{proposal_id}.patch"
-    
-    def validate_patch(self, patch_content: str) -> bool:
-        """Validate patch format"""
-        try:
-            lines = patch_content.split('\n')
-            
-            # Check for patch header
-            if not lines[0].startswith('--- ') or not lines[1].startswith('+++ '):
-                return False
-            
-            # Check for hunk header
-            if not lines[2].startswith('@@ '):
-                return False
-            
-            return True
-            
-        except Exception as e:
-            logger.error(f"Patch validation failed: {e}")
-            return False
 
 class ActionService:
-    """High-level action service"""
-    
-    def __init__(self, openai_api_key: str, neo4j_service, s3_client):
-        self.generator = ActionGenerator(openai_api_key)
-        self.patch_generator = PatchGenerator(s3_client)
+    def __init__(self, neo4j_service=None, s3_service=None):
         self.neo4j_service = neo4j_service
-    
-    def create_proposal(self, requirement: str, code_snippet: str, file_path: str, 
-                       tenant_id: str, repo_id: str, proposer_id: str) -> Optional[ActionProposal]:
-        """Create action proposal"""
+        self.s3_service = s3_service
+        self.openai_client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+    async def generate_proposal(
+        self, analysis_id: str, tenant_id: str, project_id: str
+    ) -> ActionProposal:
+        """Generate AI proposal based on analysis results"""
         try:
-            # Generate action
-            action_data = self.generator.generate_action(requirement, code_snippet, file_path)
-            if not action_data:
-                return None
-            
-            # Generate patch
-            patch_content = self.patch_generator.generate_patch(action_data)
-            if not self.patch_generator.validate_patch(patch_content):
-                return None
-            
-            # Create proposal
-            proposal_id = str(uuid.uuid4())
-            patch_s3_path = self.patch_generator.upload_patch(patch_content, proposal_id)
-            
+            # Get analysis results
+            analysis_results = await self._get_analysis_results(analysis_id)
+
+            # Generate proposal using AI
+            proposal_data = await self._generate_ai_proposal(analysis_results)
+
+            # Create proposal object
             proposal = ActionProposal(
-                proposal_id=proposal_id,
+                id=str(uuid.uuid4()),
                 tenant_id=tenant_id,
-                repo_id=repo_id,
-                proposer_id=proposer_id,
-                patch_s3_path=patch_s3_path,
-                rationale=action_data['rationale'],
-                tests_to_run=action_data.get('tests_to_run', []),
-                estimated_risk=action_data['estimated_risk'],
-                status=ProposalStatus.SUBMITTED,
-                created_at=datetime.now(timezone.utc)
+                project_id=project_id,
+                analysis_id=analysis_id,
+                title=proposal_data.get("title", "Code Improvement Proposal"),
+                description=proposal_data.get("description", ""),
+                proposed_changes=proposal_data.get("changes", []),
+                status=ProposalStatus.DRAFT,
+                confidence_score=proposal_data.get("confidence", 0.0),
+                reasoning=proposal_data.get("reasoning", ""),
+                created_at=datetime.now(timezone.utc),
+                updated_at=datetime.now(timezone.utc),
             )
-            
-            # Store in Neo4j
-            self._store_proposal(proposal)
-            
+
+            # Save to database
+            await self._save_proposal(proposal)
+
             return proposal
-            
+
         except Exception as e:
-            logger.error(f"Failed to create proposal: {e}")
-            return None
-    
-    def approve_proposal(self, proposal_id: str, approver_id: str, note: str = None) -> bool:
-        """Approve action proposal"""
+            logger.error(f"Failed to generate proposal: {e}")
+            raise
+
+    async def _get_analysis_results(self, analysis_id: str) -> Dict[str, Any]:
+        """Get analysis results from database"""
+        # This would typically query your analysis results
+        # For now, return mock data
+        return {"issues": [], "metrics": {}, "recommendations": []}
+
+    async def _generate_ai_proposal(
+        self, analysis_results: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Generate proposal using OpenAI"""
         try:
-            cypher = """
-            MATCH (p:ActionProposal {proposal_id: $proposal_id})
-            SET p.status = 'approved',
-                p.approved_by = $approver_id,
-                p.approved_at = datetime(),
-                p.approval_note = $note
-            RETURN p
-            """
+            prompt = f"""
+            Based on the following code analysis results, generate a proposal for code improvements:
             
-            with self.neo4j_service.driver.session() as session:
-                result = session.run(cypher, {
-                    'proposal_id': proposal_id,
-                    'approver_id': approver_id,
-                    'note': note
-                })
-                
-                return result.single() is not None
-                
+            Analysis Results:
+            {json.dumps(analysis_results, indent=2)}
+            
+            Please provide:
+            1. A clear title for the proposal
+            2. A detailed description of the proposed changes
+            3. Specific code changes with file paths and line numbers
+            4. Reasoning for each change
+            5. Confidence score (0.0 to 1.0)
+            
+            Return the response as JSON.
+            """
+
+            response = self.openai_client.chat.completions.create(
+                model="gpt-4",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are an expert code reviewer and refactoring specialist.",
+                    },
+                    {"role": "user", "content": prompt},
+                ],
+                temperature=0.3,
+                max_tokens=2000,
+            )
+
+            content = response.choices[0].message.content
+            return json.loads(content)
+
         except Exception as e:
-            logger.error(f"Failed to approve proposal: {e}")
-            return False
-    
-    def reject_proposal(self, proposal_id: str, approver_id: str, note: str = None) -> bool:
-        """Reject action proposal"""
+            logger.error(f"AI proposal generation failed: {e}")
+            return {
+                "title": "Code Improvement Proposal",
+                "description": "AI-generated improvements based on analysis",
+                "changes": [],
+                "confidence": 0.5,
+                "reasoning": "Generated based on code analysis",
+            }
+
+    async def _save_proposal(self, proposal: ActionProposal) -> None:
+        """Save proposal to database"""
         try:
-            cypher = """
-            MATCH (p:ActionProposal {proposal_id: $proposal_id})
-            SET p.status = 'rejected',
-                p.rejected_by = $approver_id,
-                p.rejected_at = datetime(),
-                p.rejection_note = $note
-            RETURN p
-            """
-            
-            with self.neo4j_service.driver.session() as session:
-                result = session.run(cypher, {
-                    'proposal_id': proposal_id,
-                    'approver_id': approver_id,
-                    'note': note
+            if self.neo4j_service:
+                cypher = """
+                CREATE (p:ActionProposal {
+                    id: $id,
+                    tenant_id: $tenant_id,
+                    project_id: $project_id,
+                    analysis_id: $analysis_id,
+                    title: $title,
+                    description: $description,
+                    proposed_changes: $proposed_changes,
+                    status: $status,
+                    confidence_score: $confidence_score,
+                    reasoning: $reasoning,
+                    created_at: $created_at,
+                    updated_at: $updated_at
                 })
-                
-                return result.single() is not None
-                
+                """
+
+                with self.neo4j_service.driver.session() as session:
+                    session.run(
+                        cypher,
+                        {
+                            "id": proposal.id,
+                            "tenant_id": proposal.tenant_id,
+                            "project_id": proposal.project_id,
+                            "analysis_id": proposal.analysis_id,
+                            "title": proposal.title,
+                            "description": proposal.description,
+                            "proposed_changes": proposal.proposed_changes,
+                            "status": proposal.status.value,
+                            "confidence_score": proposal.confidence_score,
+                            "reasoning": proposal.reasoning,
+                            "created_at": proposal.created_at.isoformat(),
+                            "updated_at": proposal.updated_at.isoformat(),
+                        },
+                    )
+
         except Exception as e:
-            logger.error(f"Failed to reject proposal: {e}")
-            return False
-    
-    def get_proposal(self, proposal_id: str, tenant_id: str) -> Optional[ActionProposal]:
+            logger.error(f"Failed to save proposal: {e}")
+            raise
+
+    async def get_proposal(self, proposal_id: str) -> Optional[ActionProposal]:
         """Get proposal by ID"""
         try:
-            cypher = """
-            MATCH (p:ActionProposal {proposal_id: $proposal_id, tenant_id: $tenant_id})
-            RETURN p.proposal_id as proposal_id,
-                   p.tenant_id as tenant_id,
-                   p.repo_id as repo_id,
-                   p.proposer_id as proposer_id,
-                   p.patch_s3_path as patch_s3_path,
-                   p.rationale as rationale,
-                   p.tests_to_run as tests_to_run,
-                   p.estimated_risk as estimated_risk,
-                   p.status as status,
-                   p.created_at as created_at,
-                   p.approved_by as approved_by,
-                   p.approved_at as approved_at
-            """
-            
-            with self.neo4j_service.driver.session() as session:
-                result = session.run(cypher, {
-                    'proposal_id': proposal_id,
-                    'tenant_id': tenant_id
-                })
-                
-                record = result.single()
-                if record:
-                    return ActionProposal(
-                        proposal_id=record['proposal_id'],
-                        tenant_id=record['tenant_id'],
-                        repo_id=record['repo_id'],
-                        proposer_id=record['proposer_id'],
-                        patch_s3_path=record['patch_s3_path'],
-                        rationale=record['rationale'],
-                        tests_to_run=record['tests_to_run'],
-                        estimated_risk=record['estimated_risk'],
-                        status=ProposalStatus(record['status']),
-                        created_at=record['created_at'],
-                        approved_by=record['approved_by'],
-                        approved_at=record['approved_at']
-                    )
-                
-                return None
-                
+            if self.neo4j_service:
+                cypher = """
+                MATCH (p:ActionProposal {id: $proposal_id})
+                RETURN p
+                """
+
+                with self.neo4j_service.driver.session() as session:
+                    result = session.run(cypher, {"proposal_id": proposal_id})
+                    record = result.single()
+
+                    if record:
+                        data = record["p"]
+                        return ActionProposal(
+                            id=data["id"],
+                            tenant_id=data["tenant_id"],
+                            project_id=data["project_id"],
+                            analysis_id=data["analysis_id"],
+                            title=data["title"],
+                            description=data["description"],
+                            proposed_changes=data["proposed_changes"],
+                            status=ProposalStatus(data["status"]),
+                            confidence_score=data["confidence_score"],
+                            reasoning=data["reasoning"],
+                            created_at=datetime.fromisoformat(data["created_at"]),
+                            updated_at=datetime.fromisoformat(data["updated_at"]),
+                            approved_by=data.get("approved_by"),
+                            rejected_reason=data.get("rejected_reason"),
+                        )
+
+            return None
+
         except Exception as e:
             logger.error(f"Failed to get proposal: {e}")
             return None
-    
-    def list_proposals(self, tenant_id: str, repo_id: str = None, status: str = None) -> List[ActionProposal]:
+
+    async def approve_proposal(self, proposal_id: str, approved_by: str) -> bool:
+        """Approve a proposal"""
+        try:
+            if self.neo4j_service:
+                cypher = """
+                MATCH (p:ActionProposal {id: $proposal_id})
+                SET p.status = $status,
+                    p.approved_by = $approved_by,
+                    p.updated_at = $updated_at
+                """
+
+                with self.neo4j_service.driver.session() as session:
+                    session.run(
+                        cypher,
+                        {
+                            "proposal_id": proposal_id,
+                            "status": ProposalStatus.APPROVED.value,
+                            "approved_by": approved_by,
+                            "updated_at": datetime.now(timezone.utc).isoformat(),
+                        },
+                    )
+
+                return True
+
+        except Exception as e:
+            logger.error(f"Failed to approve proposal: {e}")
+            return False
+
+    async def reject_proposal(self, proposal_id: str, rejected_reason: str) -> bool:
+        """Reject a proposal"""
+        try:
+            if self.neo4j_service:
+                cypher = """
+                MATCH (p:ActionProposal {id: $proposal_id})
+                SET p.status = $status,
+                    p.rejected_reason = $rejected_reason,
+                    p.updated_at = $updated_at
+                """
+
+                with self.neo4j_service.driver.session() as session:
+                    session.run(
+                        cypher,
+                        {
+                            "proposal_id": proposal_id,
+                            "status": ProposalStatus.REJECTED.value,
+                            "rejected_reason": rejected_reason,
+                            "updated_at": datetime.now(timezone.utc).isoformat(),
+                        },
+                    )
+
+                return True
+
+        except Exception as e:
+            logger.error(f"Failed to reject proposal: {e}")
+            return False
+
+    async def list_proposals(
+        self, tenant_id: str, project_id: str = None, status: str = None
+    ) -> List[ActionProposal]:
         """List proposals with filters"""
         try:
-            cypher = """
-            MATCH (p:ActionProposal {tenant_id: $tenant_id})
-            WHERE ($repo_id IS NULL OR p.repo_id = $repo_id)
-            AND ($status IS NULL OR p.status = $status)
-            RETURN p.proposal_id as proposal_id,
-                   p.tenant_id as tenant_id,
-                   p.repo_id as repo_id,
-                   p.proposer_id as proposer_id,
-                   p.patch_s3_path as patch_s3_path,
-                   p.rationale as rationale,
-                   p.tests_to_run as tests_to_run,
-                   p.estimated_risk as estimated_risk,
-                   p.status as status,
-                   p.created_at as created_at,
-                   p.approved_by as approved_by,
-                   p.approved_at as approved_at
-            ORDER BY p.created_at DESC
-            """
-            
-            with self.neo4j_service.driver.session() as session:
-                result = session.run(cypher, {
-                    'tenant_id': tenant_id,
-                    'repo_id': repo_id,
-                    'status': status
-                })
-                
-                proposals = []
-                for record in result:
-                    proposal = ActionProposal(
-                        proposal_id=record['proposal_id'],
-                        tenant_id=record['tenant_id'],
-                        repo_id=record['repo_id'],
-                        proposer_id=record['proposer_id'],
-                        patch_s3_path=record['patch_s3_path'],
-                        rationale=record['rationale'],
-                        tests_to_run=record['tests_to_run'],
-                        estimated_risk=record['estimated_risk'],
-                        status=ProposalStatus(record['status']),
-                        created_at=record['created_at'],
-                        approved_by=record['approved_by'],
-                        approved_at=record['approved_at']
+            proposals = []
+
+            if self.neo4j_service:
+                cypher = """
+                MATCH (p:ActionProposal {tenant_id: $tenant_id})
+                WHERE ($project_id IS NULL OR p.project_id = $project_id)
+                AND ($status IS NULL OR p.status = $status)
+                RETURN p
+                ORDER BY p.created_at DESC
+                """
+
+                with self.neo4j_service.driver.session() as session:
+                    result = session.run(
+                        cypher,
+                        {
+                            "tenant_id": tenant_id,
+                            "project_id": project_id,
+                            "status": status,
+                        },
                     )
-                    proposals.append(proposal)
-                
-                return proposals
-                
+
+                    for record in result:
+                        data = record["p"]
+                        proposal = ActionProposal(
+                            id=data["id"],
+                            tenant_id=data["tenant_id"],
+                            project_id=data["project_id"],
+                            analysis_id=data["analysis_id"],
+                            title=data["title"],
+                            description=data["description"],
+                            proposed_changes=data["proposed_changes"],
+                            status=ProposalStatus(data["status"]),
+                            confidence_score=data["confidence_score"],
+                            reasoning=data["reasoning"],
+                            created_at=datetime.fromisoformat(data["created_at"]),
+                            updated_at=datetime.fromisoformat(data["updated_at"]),
+                            approved_by=data.get("approved_by"),
+                            rejected_reason=data.get("rejected_reason"),
+                        )
+                        proposals.append(proposal)
+
+            return proposals
+
         except Exception as e:
             logger.error(f"Failed to list proposals: {e}")
             return []
-    
-    def _store_proposal(self, proposal: ActionProposal):
-        """Store proposal in Neo4j"""
-        cypher = """
-        CREATE (p:ActionProposal {
-            proposal_id: $proposal_id,
-            tenant_id: $tenant_id,
-            repo_id: $repo_id,
-            proposer_id: $proposer_id,
-            patch_s3_path: $patch_s3_path,
-            rationale: $rationale,
-            tests_to_run: $tests_to_run,
-            estimated_risk: $estimated_risk,
-            status: $status,
-            created_at: datetime()
-        })
-        
-        MERGE (r:Repo {tenant_id: $tenant_id, repo_id: $repo_id})
-        MERGE (r)-[:HAS_PROPOSAL]->(p)
-        """
-        
-        try:
-            with self.neo4j_service.driver.session() as session:
-                session.run(cypher, {
-                    'proposal_id': proposal.proposal_id,
-                    'tenant_id': proposal.tenant_id,
-                    'repo_id': proposal.repo_id,
-                    'proposer_id': proposal.proposer_id,
-                    'patch_s3_path': proposal.patch_s3_path,
-                    'rationale': proposal.rationale,
-                    'tests_to_run': proposal.tests_to_run,
-                    'estimated_risk': proposal.estimated_risk,
-                    'status': proposal.status.value,
-                    'created_at': proposal.created_at
-                })
-                
-        except Exception as e:
-            logger.error(f"Failed to store proposal: {e}")
-
-if __name__ == "__main__":
-    # Test action service
-    from neo4j import GraphDatabase
-    import boto3
-    
-    neo4j_service = Neo4jService(
-        uri=os.getenv("NEO4J_URI", "bolt://localhost:7687"),
-        user=os.getenv("NEO4J_USER", "neo4j"),
-        password=os.getenv("NEO4J_PASSWORD", "password")
-    )
-    
-    s3_client = boto3.client('s3')
-    
-    action_service = ActionService(
-        openai_api_key=os.getenv("OPENAI_API_KEY", "test-key"),
-        neo4j_service=neo4j_service,
-        s3_client=s3_client
-    )
-    
-    # Test proposal creation
-    proposal = action_service.create_proposal(
-        requirement="Add input validation to the function",
-        code_snippet="def process_data(data):\n    return data.upper()",
-        file_path="src/utils.py",
-        tenant_id="tenant_123",
-        repo_id="repo_123",
-        proposer_id="user_123"
-    )
-    
-    if proposal:
-        print(f"Created proposal: {proposal.proposal_id}")
-        print(f"Rationale: {proposal.rationale}")
-        print(f"Risk: {proposal.estimated_risk}")
-    
-    neo4j_service.close()

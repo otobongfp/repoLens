@@ -1,1 +1,1 @@
-# Shared models module 
+# Shared models module

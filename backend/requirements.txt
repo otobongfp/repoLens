@@ -10,7 +10,7 @@ pydantic-settings==2.11.0
 # Database & Storage
 sqlalchemy[asyncio]==2.0.25
 asyncpg==0.29.0
-alembic==1.13.1
+alembic==1.17.0
 greenlet==3.0.3
 neo4j==5.14.1
 redis==5.0.1
