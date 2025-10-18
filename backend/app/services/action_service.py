@@ -215,14 +215,14 @@ class ActionService:
                             updated_at=datetime.fromisoformat(data["updated_at"]),
                             approved_by=data.get("approved_by"),
                             rejected_reason=data.get("rejected_reason"),
-                        )
-
-            return None
-
+                    )
+                
+                return None
+                
         except Exception as e:
             logger.error(f"Failed to get proposal: {e}")
             return None
-
+    
     async def approve_proposal(self, proposal_id: str, approved_by: str) -> bool:
         """Approve a proposal"""
         try:
@@ -287,15 +287,15 @@ class ActionService:
             proposals = []
 
             if self.neo4j_service:
-                cypher = """
-                MATCH (p:ActionProposal {tenant_id: $tenant_id})
+            cypher = """
+            MATCH (p:ActionProposal {tenant_id: $tenant_id})
                 WHERE ($project_id IS NULL OR p.project_id = $project_id)
-                AND ($status IS NULL OR p.status = $status)
+            AND ($status IS NULL OR p.status = $status)
                 RETURN p
-                ORDER BY p.created_at DESC
-                """
-
-                with self.neo4j_service.driver.session() as session:
+            ORDER BY p.created_at DESC
+            """
+            
+            with self.neo4j_service.driver.session() as session:
                     result = session.run(
                         cypher,
                         {
@@ -322,11 +322,11 @@ class ActionService:
                             updated_at=datetime.fromisoformat(data["updated_at"]),
                             approved_by=data.get("approved_by"),
                             rejected_reason=data.get("rejected_reason"),
-                        )
-                        proposals.append(proposal)
-
-            return proposals
-
+                    )
+                    proposals.append(proposal)
+                
+                return proposals
+                
         except Exception as e:
             logger.error(f"Failed to list proposals: {e}")
             return []
