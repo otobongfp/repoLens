@@ -276,29 +276,29 @@ class ProjectService:
                 )
             )
             project_record = result.scalar_one_or_none()
-
+            
             if not project_record:
                 return None
-
+            
             # Update fields
             if request.name:
                 project_record.name = request.name
-
+            
             if request.description is not None:
                 project_record.description = request.description
-
+            
             if request.source_config:
                 project_record.source_type = request.source_config.type.value
                 project_record.source_url = (
                     request.source_config.github_url or request.source_config.git_url
                 )
                 project_record.source_path = request.source_config.local_path
-
+            
             project_record.updated_at = datetime.now(timezone.utc)
-
+            
             await db.commit()
             await db.refresh(project_record)
-
+            
             # Reconstruct source_config
             source_config_data = {
                 "type": project_record.source_type,
@@ -319,7 +319,7 @@ class ProjectService:
                 ),
             }
             source_config = SourceConfig(**source_config_data)
-
+            
             return ProjectResponse(
                 project_id=str(project_record.id),
                 name=project_record.name,
@@ -346,12 +346,12 @@ class ProjectService:
                 file_count=project_record.file_count,
                 size_bytes=project_record.size_bytes,
             )
-
+                
         except Exception as e:
             logger.error(f"Failed to update project: {e}")
             await db.rollback()
             return None
-
+    
     async def delete_project(
         self, db: AsyncSession, project_id: str, tenant_id: str
     ) -> bool:
@@ -364,10 +364,10 @@ class ProjectService:
                 )
             )
             project_record = result.scalar_one_or_none()
-
+            
             if not project_record:
                 return False
-
+            
             # Reconstruct source_config for storage deletion
             source_config_data = {
                 "type": project_record.source_type,
@@ -388,17 +388,17 @@ class ProjectService:
                 ),
             }
             source_config = SourceConfig(**source_config_data)
-
+            
             # Delete from storage
             self._delete_project_storage(project_id, source_config)
-
+            
             # Delete from database
             await db.delete(project_record)
             await db.commit()
-
+            
             logger.info(f"Deleted project {project_id} from database")
             return True
-
+            
         except Exception as e:
             logger.error(f"Failed to delete project: {e}")
             await db.rollback()
@@ -421,7 +421,7 @@ class ProjectService:
 
         except Exception as e:
             logger.error(f"Failed to clone repository: {e}")
-
+    
     def _count_files(self, project_id: str, source_config: SourceConfig) -> int:
         """Count files in project"""
         try:

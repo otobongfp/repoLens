@@ -28,7 +28,7 @@ class AIAnalyzerService:
     async def analyze_codebase(self, graph_data: Dict[str, Any]) -> Dict[str, Any]:
         if not self.enabled or not self.client:
             return self._get_disabled_response()
-
+        
         try:
             nodes = graph_data.get("nodes", [])
             edges = graph_data.get("edges", [])
@@ -106,8 +106,8 @@ class AIAnalyzerService:
             logger.info(
                 f"Function analysis completed for: {function_node.get('label', 'Unknown')}"
             )
-            return results
-
+                return results
+                
         except Exception as e:
             logger.error(f"Function analysis failed: {e}")
             return {
