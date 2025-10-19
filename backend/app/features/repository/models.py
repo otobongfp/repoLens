@@ -1,7 +1,8 @@
 # Repository analysis models
-from pydantic import BaseModel
-from typing import List, Optional, Dict, Any
 from enum import Enum
+from typing import Any, Optional
+
+from pydantic import BaseModel
 
 
 class NodeType(str, Enum):
@@ -24,36 +25,36 @@ class Node(BaseModel):
     label: str
     type: NodeType
     path: str
-    meta: Optional[Dict[str, Any]] = None
+    meta: Optional[dict[str, Any]] = None
 
 
 class Edge(BaseModel):
     from_node: str
     to_node: str
     type: EdgeType
-    meta: Optional[Dict[str, Any]] = None
+    meta: Optional[dict[str, Any]] = None
 
 
 class FileInfo(BaseModel):
     path: str
     size: int
     language: Optional[str] = None
-    functions: List[str] = []
-    classes: List[str] = []
+    functions: list[str] = []
+    classes: list[str] = []
 
 
 class FileContent(BaseModel):
     path: str
     content: str
     language: Optional[str] = None
-    functions: List[Dict[str, Any]] = []
+    functions: list[dict[str, Any]] = []
 
 
 class FunctionSummary(BaseModel):
     name: str
     start_line: int
     end_line: int
-    parameters: List[str] = []
+    parameters: list[str] = []
     return_type: Optional[str] = None
     docstring: Optional[str] = None
 
@@ -62,24 +63,24 @@ class RepositorySummary(BaseModel):
     total_files: int
     total_functions: int
     total_classes: int
-    languages: List[str] = []
-    main_technologies: List[str] = []
+    languages: list[str] = []
+    main_technologies: list[str] = []
 
 
 class RepoGraphResponse(BaseModel):
-    nodes: List[Node]
-    edges: List[Edge]
+    nodes: list[Node]
+    edges: list[Edge]
     summary: Optional[RepositorySummary] = None
 
 
 class EnhancedRepoGraphResponse(BaseModel):
-    nodes: List[Node]
-    edges: List[Edge]
+    nodes: list[Node]
+    edges: list[Edge]
     summary: Optional[RepositorySummary] = None
-    technology_stack: Optional[List[str]] = None
-    documentation: List[str] = []
-    configurations: List[str] = []
-    technologies: List[str] = []
+    technology_stack: Optional[list[str]] = None
+    documentation: list[str] = []
+    configurations: list[str] = []
+    technologies: list[str] = []
 
 
 # Request models
@@ -98,7 +99,7 @@ class AnalyzeRequest(BaseModel):
 
 class AnalyzeResponse(BaseModel):
     file: str
-    functions: List[FunctionSummary]
+    functions: list[FunctionSummary]
     error: Optional[str] = None
 
 

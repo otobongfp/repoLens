@@ -1,9 +1,12 @@
 # RepoLens Database - Connection Models
 # Database connection and session management
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
-from sqlalchemy.orm import DeclarativeBase
-from app.core.config import settings
 import logging
+
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.orm import DeclarativeBase
+
+from app.core.config import settings
+
 
 logger = logging.getLogger(__name__)
 
@@ -42,11 +45,19 @@ async def get_db() -> AsyncSession:
             await session.close()
 
 
+async def get_read_db() -> AsyncSession:
+    """Dependency to get read-only database session (no auto-rollback)"""
+    session = AsyncSessionLocal()
+    try:
+        yield session
+    finally:
+        await session.close()
+
+
 async def init_db():
     """Initialize database tables"""
     async with engine.begin() as conn:
         # Import all models here to ensure they are registered
-        from app.database.models import user, tenant, project, analysis
 
         await conn.run_sync(Base.metadata.create_all)
         logger.info("Database tables created successfully")

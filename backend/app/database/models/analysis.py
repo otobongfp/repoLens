@@ -1,18 +1,12 @@
-from sqlalchemy import (
-    Column,
-    String,
-    DateTime,
-    Boolean,
-    Text,
-    ForeignKey,
-    Integer,
-    JSON,
-)
+import uuid
+
+from sqlalchemy import JSON, Column, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
+
 from app.database.connection import Base
-import uuid
+
 
 # String constants
 ANALYSIS_STATUSES = ["pending", "in_progress", "completed", "failed", "cancelled"]

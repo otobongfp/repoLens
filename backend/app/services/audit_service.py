@@ -1,14 +1,15 @@
 # RepoLens Audit Logging Service
 # Comprehensive audit trail for compliance and security
 
-import os
-import logging
 import json
-from typing import List, Dict, Any, Optional
-from datetime import datetime, timezone
+import logging
+import os
 import uuid
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from enum import Enum
+from typing import Any, Optional
+
 
 logger = logging.getLogger(__name__)
 
@@ -53,8 +54,8 @@ class AuditEvent:
     event_id: str
     actor_id: str  # user_id or agent_id
     action: AuditAction
-    target_ids: Dict[str, str]  # e.g., {"repo_id": "xyz", "function_id": "abc"}
-    details: Dict[str, Any]
+    target_ids: dict[str, str]  # e.g., {"repo_id": "xyz", "function_id": "abc"}
+    details: dict[str, Any]
     timestamp: datetime
     tenant_id: str
     ip_address: Optional[str] = None
@@ -131,7 +132,7 @@ class AuditLogger:
             return False
 
     def log_repository_analysis(
-        self, tenant_id: str, repo_id: str, actor_id: str, details: Dict[str, Any]
+        self, tenant_id: str, repo_id: str, actor_id: str, details: dict[str, Any]
     ) -> bool:
         """Log repository analysis event"""
         event = AuditEvent(
@@ -146,7 +147,7 @@ class AuditLogger:
         return self.log_event(event)
 
     def log_requirement_extraction(
-        self, tenant_id: str, req_id: str, actor_id: str, details: Dict[str, Any]
+        self, tenant_id: str, req_id: str, actor_id: str, details: dict[str, Any]
     ) -> bool:
         """Log requirement extraction event"""
         event = AuditEvent(
@@ -167,7 +168,7 @@ class AuditLogger:
         function_id: str,
         actor_id: str,
         verdict: str,
-        details: Dict[str, Any],
+        details: dict[str, Any],
     ) -> bool:
         """Log requirement verification event"""
         event = AuditEvent(
@@ -187,7 +188,7 @@ class AuditLogger:
         proposal_id: str,
         actor_id: str,
         verdict: str,
-        details: Dict[str, Any],
+        details: dict[str, Any],
     ) -> bool:
         """Log proposal approval event"""
         action = (
@@ -213,7 +214,7 @@ class AuditLogger:
         repo_id: str,
         actor_id: str,
         scan_type: str,
-        details: Dict[str, Any],
+        details: dict[str, Any],
     ) -> bool:
         """Log security scan event"""
         action = AuditAction.CVE_SCAN if scan_type == "cve" else AuditAction.SAST_SCAN
@@ -234,8 +235,8 @@ class AuditLogger:
         tenant_id: str,
         user_id: str,
         action: AuditAction,
-        target_ids: Dict[str, str],
-        details: Dict[str, Any],
+        target_ids: dict[str, str],
+        details: dict[str, Any],
         ip_address: str = None,
         user_agent: str = None,
         session_id: str = None,
@@ -255,7 +256,7 @@ class AuditLogger:
         )
         return self.log_event(event)
 
-    def log_system_event(self, action: AuditAction, details: Dict[str, Any]) -> bool:
+    def log_system_event(self, action: AuditAction, details: dict[str, Any]) -> bool:
         """Log system event"""
         event = AuditEvent(
             event_id=str(uuid.uuid4()),
@@ -276,7 +277,7 @@ class AuditLogger:
         action: AuditAction = None,
         actor_id: str = None,
         limit: int = 100,
-    ) -> List[AuditEvent]:
+    ) -> list[AuditEvent]:
         """Get audit trail with filters"""
         try:
             cypher = """
@@ -336,7 +337,7 @@ class AuditLogger:
 
     def get_audit_summary(
         self, tenant_id: str, start_date: datetime = None, end_date: datetime = None
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get audit summary statistics"""
         try:
             cypher = """
@@ -478,7 +479,7 @@ class AuditService:
         repo_id: str,
         actor_id: str,
         operation: str,
-        details: Dict[str, Any],
+        details: dict[str, Any],
     ) -> bool:
         """Log repository operation"""
         if operation == "analyze":
@@ -502,7 +503,7 @@ class AuditService:
         req_id: str,
         actor_id: str,
         operation: str,
-        details: Dict[str, Any],
+        details: dict[str, Any],
     ) -> bool:
         """Log requirement operation"""
         if operation == "extract":
@@ -524,7 +525,7 @@ class AuditService:
         proposal_id: str,
         actor_id: str,
         operation: str,
-        details: Dict[str, Any],
+        details: dict[str, Any],
     ) -> bool:
         """Log proposal operation"""
         if operation == "create":
@@ -548,7 +549,7 @@ class AuditService:
         repo_id: str,
         actor_id: str,
         scan_type: str,
-        details: Dict[str, Any],
+        details: dict[str, Any],
     ) -> bool:
         """Log security operation"""
         return self.logger.log_security_scan(
@@ -557,7 +558,7 @@ class AuditService:
 
     def get_compliance_report(
         self, tenant_id: str, start_date: datetime = None, end_date: datetime = None
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get compliance report"""
         summary = self.logger.get_audit_summary(tenant_id, start_date, end_date)
         events = self.logger.get_audit_trail(
@@ -598,7 +599,6 @@ class AuditService:
 
 if __name__ == "__main__":
     # Test audit service
-    from neo4j import GraphDatabase
 
     neo4j_service = Neo4jService(
         uri=os.getenv("NEO4J_URI", "bolt://localhost:7687"),

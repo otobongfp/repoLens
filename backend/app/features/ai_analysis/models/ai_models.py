@@ -1,5 +1,6 @@
+from typing import Any, Optional
+
 from pydantic import BaseModel
-from typing import Dict, Any, List, Optional
 
 
 class AIAnalysisRequest(BaseModel):
@@ -22,8 +23,8 @@ class AskRequest(BaseModel):
 
 class AIAnalysisResponse(BaseModel):
     enabled: bool
-    scores: Optional[Dict[str, Any]] = None
-    analysis: Optional[Dict[str, Any]] = None
+    scores: Optional[dict[str, Any]] = None
+    analysis: Optional[dict[str, Any]] = None
     summary: Optional[str] = None
     error: Optional[str] = None
 

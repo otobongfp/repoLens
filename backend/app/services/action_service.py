@@ -1,15 +1,15 @@
 # RepoLens Action Proposal Service
 # AI-generated code changes with human approval workflow
 
-import os
-import logging
 import json
-import hashlib
-from typing import List, Dict, Any, Optional
-from datetime import datetime, timezone
+import logging
+import os
 import uuid
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from enum import Enum
+from typing import Any, Optional
+
 
 try:
     import openai
@@ -36,7 +36,7 @@ class ActionProposal:
     analysis_id: str
     title: str
     description: str
-    proposed_changes: List[Dict[str, Any]]
+    proposed_changes: list[dict[str, Any]]
     status: ProposalStatus
     confidence_score: float
     reasoning: str
@@ -88,30 +88,30 @@ class ActionService:
             logger.error(f"Failed to generate proposal: {e}")
             raise
 
-    async def _get_analysis_results(self, analysis_id: str) -> Dict[str, Any]:
+    async def _get_analysis_results(self, analysis_id: str) -> dict[str, Any]:
         """Get analysis results from database"""
         # This would typically query your analysis results
         # For now, return mock data
         return {"issues": [], "metrics": {}, "recommendations": []}
 
     async def _generate_ai_proposal(
-        self, analysis_results: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, analysis_results: dict[str, Any]
+    ) -> dict[str, Any]:
         """Generate proposal using OpenAI"""
         try:
             prompt = f"""
             Based on the following code analysis results, generate a proposal for code improvements:
-            
+
             Analysis Results:
             {json.dumps(analysis_results, indent=2)}
-            
+
             Please provide:
             1. A clear title for the proposal
             2. A detailed description of the proposed changes
             3. Specific code changes with file paths and line numbers
             4. Reasoning for each change
             5. Confidence score (0.0 to 1.0)
-            
+
             Return the response as JSON.
             """
 
@@ -215,14 +215,14 @@ class ActionService:
                             updated_at=datetime.fromisoformat(data["updated_at"]),
                             approved_by=data.get("approved_by"),
                             rejected_reason=data.get("rejected_reason"),
-                    )
-                
+                        )
+
                 return None
-                
+
         except Exception as e:
             logger.error(f"Failed to get proposal: {e}")
             return None
-    
+
     async def approve_proposal(self, proposal_id: str, approved_by: str) -> bool:
         """Approve a proposal"""
         try:
@@ -281,21 +281,21 @@ class ActionService:
 
     async def list_proposals(
         self, tenant_id: str, project_id: str = None, status: str = None
-    ) -> List[ActionProposal]:
+    ) -> list[ActionProposal]:
         """List proposals with filters"""
         try:
             proposals = []
 
             if self.neo4j_service:
-            cypher = """
-            MATCH (p:ActionProposal {tenant_id: $tenant_id})
+                cypher = """
+                MATCH (p:ActionProposal {tenant_id: $tenant_id})
                 WHERE ($project_id IS NULL OR p.project_id = $project_id)
-            AND ($status IS NULL OR p.status = $status)
+                AND ($status IS NULL OR p.status = $status)
                 RETURN p
-            ORDER BY p.created_at DESC
-            """
-            
-            with self.neo4j_service.driver.session() as session:
+                ORDER BY p.created_at DESC
+                """
+
+                with self.neo4j_service.driver.session() as session:
                     result = session.run(
                         cypher,
                         {
@@ -322,11 +322,11 @@ class ActionService:
                             updated_at=datetime.fromisoformat(data["updated_at"]),
                             approved_by=data.get("approved_by"),
                             rejected_reason=data.get("rejected_reason"),
-                    )
-                    proposals.append(proposal)
-                
+                        )
+                        proposals.append(proposal)
+
                 return proposals
-                
+
         except Exception as e:
             logger.error(f"Failed to list proposals: {e}")
             return []

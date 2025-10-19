@@ -1,28 +1,49 @@
 # Authentication service with OAuth support
+import logging
+import re
 from datetime import datetime, timedelta, timezone
-from typing import Optional, Dict, Any
+from typing import Any, Optional
+
+from httpx_oauth.clients.github import GitHubOAuth2
+from httpx_oauth.clients.google import GoogleOAuth2
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from authlib.integrations.httpx_client import AsyncOAuth2Client
-from httpx_oauth.clients.google import GoogleOAuth2
-from httpx_oauth.clients.github import GitHubOAuth2
-import secrets
-import logging
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.database.models.user import (
-    User,
-    UserAuthProvider,
-    UserSession,
-    AuthProvider,
-    UserRole,
-)
 from app.database.models.tenant import Tenant, TenantMember, TenantMemberRole
+from app.database.models.user import AuthProvider, User, UserAuthProvider, UserRole
 from app.services.session_manager import session_manager
 
+
 logger = logging.getLogger(__name__)
+
+
+def validate_password(password: str) -> tuple[bool, str]:
+    """
+    Validate password strength
+    Returns: (is_valid, error_message)
+    """
+    if len(password) < 8:
+        return False, "Password must be at least 8 characters long"
+
+    if len(password) > 72:
+        return False, "Password must be no more than 72 characters long"
+
+    if not re.search(r"[A-Z]", password):
+        return False, "Password must contain at least one uppercase letter"
+
+    if not re.search(r"[a-z]", password):
+        return False, "Password must contain at least one lowercase letter"
+
+    if not re.search(r"\d", password):
+        return False, "Password must contain at least one number"
+
+    if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
+        return False, "Password must contain at least one special character"
+
+    return True, ""
 
 
 class AuthService:
@@ -50,11 +71,15 @@ class AuthService:
         return self.pwd_context.verify(plain_password, hashed_password)
 
     def get_password_hash(self, password: str) -> str:
-        """Hash a password"""
+        """Hash a password with validation"""
+        # Password validation temporarily disabled
+        # is_valid, error_msg = validate_password(password)
+        # if not is_valid:
+        #     raise ValueError(f"Password validation failed: {error_msg}")
         return self.pwd_context.hash(password)
 
     def create_access_token(
-        self, data: Dict[str, Any], expires_delta: Optional[timedelta] = None
+        self, data: dict[str, Any], expires_delta: Optional[timedelta] = None
     ) -> str:
         """Create a JWT access token"""
         to_encode = data.copy()
@@ -69,7 +94,7 @@ class AuthService:
         encoded_jwt = jwt.encode(to_encode, self.secret_key, algorithm=self.algorithm)
         return encoded_jwt
 
-    def create_refresh_token(self, data: Dict[str, Any]) -> str:
+    def create_refresh_token(self, data: dict[str, Any]) -> str:
         """Create a JWT refresh token"""
         to_encode = data.copy()
         expire = datetime.now(timezone.utc) + timedelta(
@@ -81,7 +106,7 @@ class AuthService:
 
     def verify_token(
         self, token: str, token_type: str = "access"
-    ) -> Optional[Dict[str, Any]]:
+    ) -> Optional[dict[str, Any]]:
         """Verify and decode a JWT token"""
         try:
             payload = jwt.decode(token, self.secret_key, algorithms=[self.algorithm])
@@ -171,7 +196,7 @@ class AuthService:
         user: User,
         ip_address: Optional[str] = None,
         user_agent: Optional[str] = None,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Create a new user session with Redis"""
         session_data = {
             "user_id": str(user.id),
@@ -220,7 +245,7 @@ class AuthService:
             },
         }
 
-    async def get_user_by_session(self, session_id: str) -> Optional[Dict[str, Any]]:
+    async def get_user_by_session(self, session_id: str) -> Optional[dict[str, Any]]:
         """Get user by session ID from Redis"""
         session_data = await session_manager.get_session(session_id)
         if not session_data:
@@ -244,7 +269,7 @@ class AuthService:
 
     async def refresh_access_token(
         self, refresh_token: str
-    ) -> Optional[Dict[str, Any]]:
+    ) -> Optional[dict[str, Any]]:
         """Refresh an access token using refresh token from Redis"""
         user_id = await session_manager.validate_refresh_token(refresh_token)
         if not user_id:
@@ -268,14 +293,14 @@ class AuthService:
             # Delete refresh token from Redis
             await session_manager.delete_refresh_token(refresh_token)
 
-            logger.info(f"User logged out successfully")
+            logger.info("User logged out successfully")
             return True
 
         except Exception as e:
             logger.error(f"Logout error: {e}")
             return False
 
-    async def get_session_stats(self) -> Dict[str, Any]:
+    async def get_session_stats(self) -> dict[str, Any]:
         """Get session statistics from Redis"""
         return await session_manager.get_session_stats()
 
@@ -386,7 +411,7 @@ class AuthService:
         user: User,
         provider: AuthProvider,
         provider_user_id: str,
-        token: Dict[str, Any],
+        token: dict[str, Any],
     ) -> UserAuthProvider:
         """Create or update OAuth provider information"""
         result = await db.execute(

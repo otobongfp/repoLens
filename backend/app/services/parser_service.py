@@ -1,26 +1,23 @@
 # RepoLens Parser Service
 # Tree-sitter based code parsing with multi-language support
 
-import os
-import json
-import hashlib
 import logging
-from pathlib import Path
-from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Optional
+
 
 # Tree-sitter imports
 try:
     import tree_sitter
-    from tree_sitter import Language, Parser, Node
+    from tree_sitter import Language, Node, Parser
 except ImportError:
     raise ImportError("tree_sitter not installed. Run: pip install tree_sitter")
 
 # Language packages
 try:
-    import tree_sitter_python as tspython
     import tree_sitter_javascript as tsjavascript
+    import tree_sitter_python as tspython
     import tree_sitter_typescript as tstypescript
 except ImportError as e:
     logging.warning(f"Some language packages not available: {e}")
@@ -33,9 +30,9 @@ class CodeSnippet:
     file_path: str
     content: str
     language: str
-    functions: List[Dict[str, Any]]
-    classes: List[Dict[str, Any]]
-    imports: List[str]
+    functions: list[dict[str, Any]]
+    classes: list[dict[str, Any]]
+    imports: list[str]
     complexity_score: int
     lines_of_code: int
     docstring: Optional[str] = None
@@ -63,15 +60,15 @@ class ParserService:
         """Initialize tree-sitter parsers for supported languages"""
         try:
             if "tspython" in globals():
-                python_language = Language(tspython.language())
+                python_language = Language(tspython.language(), "python")
                 self.supported_languages["python"]["parser"] = python_language
 
             if "tsjavascript" in globals():
-                js_language = Language(tsjavascript.language())
+                js_language = Language(tsjavascript.language(), "javascript")
                 self.supported_languages["javascript"]["parser"] = js_language
 
             if "tstypescript" in globals():
-                ts_language = Language(tstypescript.language())
+                ts_language = Language(tstypescript.language(), "typescript")
                 self.supported_languages["typescript"]["parser"] = ts_language
 
         except Exception as e:
@@ -308,7 +305,7 @@ class ParserService:
             lines_of_code=len(lines),
         )
 
-    def parse_repository(self, repo_path: str) -> List[CodeSnippet]:
+    def parse_repository(self, repo_path: str) -> list[CodeSnippet]:
         """Parse entire repository and return list of code snippets"""
         snippets = []
         repo_path = Path(repo_path)
@@ -322,9 +319,7 @@ class ParserService:
                 language = self.get_language_from_extension(str(file_path))
                 if language:
                     try:
-                        with open(
-                            file_path, "r", encoding="utf-8", errors="ignore"
-                        ) as f:
+                        with open(file_path, encoding="utf-8", errors="ignore") as f:
                             content = f.read()
 
                         snippet = self.parse_file(str(file_path), content)
@@ -335,7 +330,7 @@ class ParserService:
 
         return snippets
 
-    def get_supported_extensions(self) -> Dict[str, List[str]]:
+    def get_supported_extensions(self) -> dict[str, list[str]]:
         """Get all supported file extensions"""
         return {
             lang: config["extensions"]

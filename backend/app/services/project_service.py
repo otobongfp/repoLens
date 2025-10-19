@@ -1,30 +1,27 @@
 # Project Management Service
-import os
-import shutil
+import asyncio
 import logging
+import shutil
 import uuid
-from typing import List, Optional, Dict, Any
 from datetime import datetime, timezone
-import git
-import boto3
 from pathlib import Path
+from typing import Optional
+
+import git
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.database.models.project import Project
 
 from ..shared.models.project_models import (
-    ProjectResponse,
     ProjectCreateRequest,
-    ProjectUpdateRequest,
+    ProjectResponse,
     ProjectStatus,
-    SourceType,
+    ProjectUpdateRequest,
     SourceConfig,
-    StorageConfig,
-    EnvironmentConfig,
+    SourceType,
 )
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from app.database.models.project import Project
-from app.database.models.tenant import Tenant
-from app.database.models.user import User
-import json
+
 
 logger = logging.getLogger(__name__)
 
@@ -79,44 +76,60 @@ class ProjectService:
                 name=request.name,
                 description=request.description,
                 source_type=request.source_config.type.value,
-                source_url=request.source_config.github_url
-                or request.source_config.git_url,
+                source_url=request.source_config.github_url,
                 source_path=request.source_config.local_path,
-                status="active",
+                status="created",
                 created_at=datetime.now(timezone.utc),
                 updated_at=datetime.now(timezone.utc),
+                file_count=0,  # Set initial values
+                size_bytes=0,
             )
 
             db.add(project_record)
             await db.commit()
             await db.refresh(project_record)
 
-            # Clone/download source if needed
-            if request.source_config.type in [SourceType.GITHUB, SourceType.GIT]:
-                await self._clone_repository(project_id, request.source_config)
+            # Clone the repository in the background
+            try:
+                await self._clone_repository(
+                    str(project_record.id), request.source_config
+                )
 
-            # Count files and calculate size
-            file_count = self._count_files(project_id, request.source_config)
-            size_bytes = self._calculate_size(project_id, request.source_config)
+                # Update file count and size after cloning
+                file_count = await self._count_files(
+                    str(project_record.id), request.source_config
+                )
+                size_bytes = await self._calculate_size(
+                    str(project_record.id), request.source_config
+                )
 
-            # Update project with file count and size
-            project_record.file_count = file_count
-            project_record.size_bytes = size_bytes
-            await db.commit()
+                # Update the project record with actual values
+                project_record.file_count = file_count
+                project_record.size_bytes = size_bytes
+                project_record.status = "ready"
+                await db.commit()
+                await db.refresh(project_record)
+
+            except Exception as e:
+                logger.warning(
+                    f"Failed to clone repository for project {project_record.id}: {e}"
+                )
+                # Don't fail the project creation, just log the warning
 
             return ProjectResponse(
                 project_id=str(project_record.id),
                 name=project_record.name,
                 description=project_record.description,
                 source_config=request.source_config,
-                status=ProjectStatus(project_record.status),
+                status=project_record.status,
                 tenant_id=str(project_record.tenant_id),
+                owner_id=str(project_record.owner_id),
                 created_at=project_record.created_at.isoformat(),
                 updated_at=project_record.updated_at.isoformat(),
                 last_analyzed=None,
                 analysis_count=0,
-                file_count=file_count,
-                size_bytes=size_bytes,
+                file_count=project_record.file_count,
+                size_bytes=project_record.size_bytes,
             )
 
         except Exception as e:
@@ -167,6 +180,7 @@ class ProjectService:
                 source_config=source_config,
                 status=ProjectStatus(project_record.status),
                 tenant_id=str(project_record.tenant_id),
+                owner_id=str(project_record.owner_id),
                 created_at=(
                     project_record.created_at.isoformat()
                     if project_record.created_at
@@ -193,7 +207,7 @@ class ProjectService:
 
     async def list_projects(
         self, db: AsyncSession, tenant_id: str
-    ) -> List[ProjectResponse]:
+    ) -> list[ProjectResponse]:
         """List all projects for tenant"""
         try:
             result = await db.execute(
@@ -234,6 +248,7 @@ class ProjectService:
                         source_config=source_config,
                         status=ProjectStatus(project_record.status),
                         tenant_id=str(project_record.tenant_id),
+                        owner_id=str(project_record.owner_id),
                         created_at=(
                             project_record.created_at.isoformat()
                             if project_record.created_at
@@ -276,29 +291,27 @@ class ProjectService:
                 )
             )
             project_record = result.scalar_one_or_none()
-            
+
             if not project_record:
                 return None
-            
+
             # Update fields
             if request.name:
                 project_record.name = request.name
-            
+
             if request.description is not None:
                 project_record.description = request.description
-            
+
             if request.source_config:
                 project_record.source_type = request.source_config.type.value
-                project_record.source_url = (
-                    request.source_config.github_url or request.source_config.git_url
-                )
+                project_record.source_url = request.source_config.github_url
                 project_record.source_path = request.source_config.local_path
-            
+
             project_record.updated_at = datetime.now(timezone.utc)
-            
+
             await db.commit()
             await db.refresh(project_record)
-            
+
             # Reconstruct source_config
             source_config_data = {
                 "type": project_record.source_type,
@@ -319,7 +332,7 @@ class ProjectService:
                 ),
             }
             source_config = SourceConfig(**source_config_data)
-            
+
             return ProjectResponse(
                 project_id=str(project_record.id),
                 name=project_record.name,
@@ -327,6 +340,7 @@ class ProjectService:
                 source_config=source_config,
                 status=ProjectStatus(project_record.status),
                 tenant_id=str(project_record.tenant_id),
+                owner_id=str(project_record.owner_id),
                 created_at=(
                     project_record.created_at.isoformat()
                     if project_record.created_at
@@ -346,12 +360,12 @@ class ProjectService:
                 file_count=project_record.file_count,
                 size_bytes=project_record.size_bytes,
             )
-                
+
         except Exception as e:
             logger.error(f"Failed to update project: {e}")
             await db.rollback()
             return None
-    
+
     async def delete_project(
         self, db: AsyncSession, project_id: str, tenant_id: str
     ) -> bool:
@@ -364,10 +378,10 @@ class ProjectService:
                 )
             )
             project_record = result.scalar_one_or_none()
-            
+
             if not project_record:
                 return False
-            
+
             # Reconstruct source_config for storage deletion
             source_config_data = {
                 "type": project_record.source_type,
@@ -388,17 +402,17 @@ class ProjectService:
                 ),
             }
             source_config = SourceConfig(**source_config_data)
-            
+
             # Delete from storage
             self._delete_project_storage(project_id, source_config)
-            
+
             # Delete from database
             await db.delete(project_record)
             await db.commit()
-            
+
             logger.info(f"Deleted project {project_id} from database")
             return True
-            
+
         except Exception as e:
             logger.error(f"Failed to delete project: {e}")
             await db.rollback()
@@ -410,49 +424,84 @@ class ProjectService:
             project_path = self.storage_manager.ensure_project_directory(project_id)
 
             if source_config.type == SourceType.GITHUB:
-                repo_url = f"https://github.com/{source_config.github_url}.git"
-            elif source_config.type == SourceType.GIT:
-                repo_url = source_config.git_url
+                repo_url = source_config.github_url
+                if not repo_url.endswith(".git"):
+                    repo_url += ".git"
+
+                # Use asyncio to run git clone in a thread pool to avoid async issues
+                await asyncio.get_event_loop().run_in_executor(
+                    None, lambda: git.Repo.clone_from(repo_url, project_path)
+                )
+                logger.info(f"Cloned repository to {project_path}")
             else:
                 return
 
-            git.Repo.clone_from(repo_url, project_path)
-            logger.info(f"Cloned repository to {project_path}")
-
         except Exception as e:
             logger.error(f"Failed to clone repository: {e}")
-    
-    def _count_files(self, project_id: str, source_config: SourceConfig) -> int:
+
+    async def _count_files(self, project_id: str, source_config: SourceConfig) -> int:
         """Count files in project"""
         try:
             if source_config.type == SourceType.LOCAL:
-                return sum(
-                    1 for _ in Path(source_config.local_path).rglob("*") if _.is_file()
+
+                def count_local_files():
+                    return sum(
+                        1
+                        for _ in Path(source_config.local_path).rglob("*")
+                        if _.is_file()
+                    )
+
+                return await asyncio.get_event_loop().run_in_executor(
+                    None, count_local_files
                 )
-            elif source_config.type in [SourceType.GITHUB, SourceType.GIT]:
-                project_path = self.storage_manager.get_project_path(project_id)
-                if project_path.exists():
-                    return sum(1 for _ in project_path.rglob("*") if _.is_file())
+            elif source_config.type == SourceType.GITHUB:
+
+                def count_github_files():
+                    project_path = self.storage_manager.get_project_path(project_id)
+                    if project_path.exists():
+                        return sum(1 for _ in project_path.rglob("*") if _.is_file())
+                    return 0
+
+                return await asyncio.get_event_loop().run_in_executor(
+                    None, count_github_files
+                )
             return 0
         except Exception as e:
             logger.error(f"Failed to count files: {e}")
             return 0
 
-    def _calculate_size(self, project_id: str, source_config: SourceConfig) -> int:
+    async def _calculate_size(
+        self, project_id: str, source_config: SourceConfig
+    ) -> int:
         """Calculate project size in bytes"""
         try:
             if source_config.type == SourceType.LOCAL:
-                return sum(
-                    f.stat().st_size
-                    for f in Path(source_config.local_path).rglob("*")
-                    if f.is_file()
-                )
-            elif source_config.type in [SourceType.GITHUB, SourceType.GIT]:
-                project_path = self.storage_manager.get_project_path(project_id)
-                if project_path.exists():
+
+                def calculate_local_size():
                     return sum(
-                        f.stat().st_size for f in project_path.rglob("*") if f.is_file()
+                        f.stat().st_size
+                        for f in Path(source_config.local_path).rglob("*")
+                        if f.is_file()
                     )
+
+                return await asyncio.get_event_loop().run_in_executor(
+                    None, calculate_local_size
+                )
+            elif source_config.type == SourceType.GITHUB:
+
+                def calculate_github_size():
+                    project_path = self.storage_manager.get_project_path(project_id)
+                    if project_path.exists():
+                        return sum(
+                            f.stat().st_size
+                            for f in project_path.rglob("*")
+                            if f.is_file()
+                        )
+                    return 0
+
+                return await asyncio.get_event_loop().run_in_executor(
+                    None, calculate_github_size
+                )
             return 0
         except Exception as e:
             logger.error(f"Failed to calculate size: {e}")
@@ -464,7 +513,7 @@ class ProjectService:
             if source_config.type in [
                 SourceType.LOCAL,
                 SourceType.GITHUB,
-                SourceType.GIT,
+                SourceType.GITHUB,
             ]:
                 self.storage_manager.delete_project_directory(project_id)
         except Exception as e:

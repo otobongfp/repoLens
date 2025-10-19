@@ -1,14 +1,15 @@
 # RepoLens Security Assessment Service
 # CVE scanning and SAST analysis
 
-import os
-import logging
 import json
+import logging
+import os
 import subprocess
-from typing import List, Dict, Any, Optional
-from datetime import datetime, timezone
 import uuid
 from dataclasses import dataclass
+from datetime import datetime, timezone
+from typing import Any, Optional
+
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +22,7 @@ class CVEInfo:
     summary: str
     severity: str
     cvss: Optional[float]
-    references: List[str]
+    references: list[str]
 
 
 @dataclass
@@ -44,7 +45,7 @@ class CVEScanner:
     def __init__(self):
         self.osv_api_url = "https://api.osv.dev/v1/query"
 
-    def scan_dependencies(self, dependencies: List[Dict[str, str]]) -> List[CVEInfo]:
+    def scan_dependencies(self, dependencies: list[dict[str, str]]) -> list[CVEInfo]:
         """Scan dependencies for CVEs"""
         cves = []
 
@@ -75,14 +76,14 @@ class CVEScanner:
 
         return cves
 
-    def _extract_severity(self, vuln: Dict[str, Any]) -> str:
+    def _extract_severity(self, vuln: dict[str, Any]) -> str:
         """Extract severity from vulnerability"""
         severity = vuln.get("severity", [])
         if severity:
             return severity[0].get("score", "unknown")
         return "unknown"
 
-    def _extract_cvss(self, vuln: Dict[str, Any]) -> Optional[float]:
+    def _extract_cvss(self, vuln: dict[str, Any]) -> Optional[float]:
         """Extract CVSS score"""
         severity = vuln.get("severity", [])
         if severity:
@@ -100,7 +101,7 @@ class SASTScanner:
             "typescript": ["eslint", "npm audit"],
         }
 
-    def scan_file(self, file_path: str, language: str) -> List[SecurityFinding]:
+    def scan_file(self, file_path: str, language: str) -> list[SecurityFinding]:
         """Scan file for security issues"""
         findings = []
 
@@ -111,7 +112,7 @@ class SASTScanner:
 
         return findings
 
-    def _scan_python_file(self, file_path: str) -> List[SecurityFinding]:
+    def _scan_python_file(self, file_path: str) -> list[SecurityFinding]:
         """Scan Python file with bandit"""
         findings = []
 
@@ -142,7 +143,7 @@ class SASTScanner:
 
         return findings
 
-    def _scan_js_file(self, file_path: str) -> List[SecurityFinding]:
+    def _scan_js_file(self, file_path: str) -> list[SecurityFinding]:
         """Scan JavaScript file with ESLint security rules"""
         findings = []
 
@@ -187,7 +188,7 @@ class SecurityService:
         self.cve_scanner = CVEScanner()
         self.sast_scanner = SASTScanner()
 
-    def assess_repository(self, repo_id: str, tenant_id: str) -> Dict[str, Any]:
+    def assess_repository(self, repo_id: str, tenant_id: str) -> dict[str, Any]:
         """Perform comprehensive security assessment"""
         # Get repository files
         files = self._get_repository_files(repo_id, tenant_id)
@@ -216,7 +217,7 @@ class SecurityService:
 
     def _get_repository_files(
         self, repo_id: str, tenant_id: str
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Get repository files from Neo4j"""
         cypher = """
         MATCH (f:File {tenant_id: $tenant_id, repo_id: $repo_id})
@@ -236,8 +237,8 @@ class SecurityService:
             return []
 
     def _extract_dependencies(
-        self, files: List[Dict[str, Any]]
-    ) -> List[Dict[str, str]]:
+        self, files: list[dict[str, Any]]
+    ) -> list[dict[str, str]]:
         """Extract dependencies from files"""
         dependencies = []
 
@@ -256,12 +257,12 @@ class SecurityService:
 
         return dependencies
 
-    def _parse_requirements_file(self, file_path: str) -> List[Dict[str, str]]:
+    def _parse_requirements_file(self, file_path: str) -> list[dict[str, str]]:
         """Parse Python requirements.txt"""
         dependencies = []
 
         try:
-            with open(file_path, "r") as f:
+            with open(file_path) as f:
                 for line in f:
                     line = line.strip()
                     if line and not line.startswith("#"):
@@ -281,12 +282,12 @@ class SecurityService:
 
         return dependencies
 
-    def _parse_package_json(self, file_path: str) -> List[Dict[str, str]]:
+    def _parse_package_json(self, file_path: str) -> list[dict[str, str]]:
         """Parse JavaScript package.json"""
         dependencies = []
 
         try:
-            with open(file_path, "r") as f:
+            with open(file_path) as f:
                 data = json.load(f)
 
                 # Extract dependencies
@@ -305,8 +306,8 @@ class SecurityService:
         self,
         repo_id: str,
         tenant_id: str,
-        cves: List[CVEInfo],
-        findings: List[SecurityFinding],
+        cves: list[CVEInfo],
+        findings: list[SecurityFinding],
     ):
         """Store security results in Neo4j"""
         # Store CVEs
@@ -318,7 +319,7 @@ class SecurityService:
                 c.cvss = $cvss,
                 c.references = $references,
                 c.last_scanned = datetime()
-            
+
             MERGE (r:Repo {tenant_id: $tenant_id, repo_id: $repo_id})
             MERGE (r)-[:HAS_VULNERABILITY]->(c)
             """
@@ -351,7 +352,7 @@ class SecurityService:
                 end_line: $end_line,
                 created_at: datetime()
             })
-            
+
             MERGE (r:Repo {tenant_id: $tenant_id, repo_id: $repo_id})
             MERGE (r)-[:HAS_FINDING]->(f)
             """
@@ -376,7 +377,6 @@ class SecurityService:
 
 if __name__ == "__main__":
     # Test security service
-    from neo4j import GraphDatabase
 
     neo4j_service = Neo4jService(
         uri=os.getenv("NEO4J_URI", "bolt://localhost:7687"),

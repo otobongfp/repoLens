@@ -1,13 +1,15 @@
 # RepoLens Vector Store Service
 # Embedding management and similarity search
 
-import os
+import hashlib
+import json
 import logging
-from typing import List, Dict, Any, Optional, Tuple
-from datetime import datetime, timezone
+import os
 import uuid
-import numpy as np
 from dataclasses import dataclass
+from datetime import datetime, timezone
+from typing import Any, Optional
+
 
 try:
     import openai
@@ -16,10 +18,9 @@ except ImportError:
     raise ImportError("openai not installed. Run: pip install openai")
 
 try:
-    import psycopg2
-    from psycopg2.extras import RealDictCursor
+    import asyncpg
 except ImportError:
-    raise ImportError("psycopg2 not installed. Run: pip install psycopg2-binary")
+    raise ImportError("asyncpg not installed. Run: pip install asyncpg")
 
 logger = logging.getLogger(__name__)
 
@@ -31,8 +32,8 @@ class Embedding:
     embedding_id: str
     content: str
     content_hash: str
-    embedding_vector: List[float]
-    metadata: Dict[str, Any]
+    embedding_vector: list[float]
+    metadata: dict[str, Any]
     created_at: datetime
 
 
@@ -43,7 +44,7 @@ class SimilarityResult:
     embedding_id: str
     content: str
     similarity_score: float
-    metadata: Dict[str, Any]
+    metadata: dict[str, Any]
 
 
 class OpenAIEmbeddingService:
@@ -54,7 +55,7 @@ class OpenAIEmbeddingService:
         self.model = model
         self.dimensions = 1536  # OpenAI text-embedding-3-small dimensions
 
-    def create_embedding(self, text: str) -> List[float]:
+    def create_embedding(self, text: str) -> list[float]:
         """Create embedding for text"""
         try:
             response = self.client.embeddings.create(
@@ -66,7 +67,7 @@ class OpenAIEmbeddingService:
             logger.error(f"Failed to create embedding: {e}")
             raise
 
-    def create_embeddings_batch(self, texts: List[str]) -> List[List[float]]:
+    def create_embeddings_batch(self, texts: list[str]) -> list[list[float]]:
         """Create embeddings for multiple texts"""
         try:
             response = self.client.embeddings.create(
@@ -85,9 +86,8 @@ class PgVectorStore:
     def __init__(self, connection_string: str):
         self.connection_string = connection_string
         self.dimensions = 1536
-        self._create_tables()
 
-    def _create_tables(self):
+    async def _create_tables(self):
         """Create vector tables"""
         create_table_sql = """
         CREATE TABLE IF NOT EXISTS embeddings (
@@ -99,33 +99,33 @@ class PgVectorStore:
             created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
             updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
         );
-        
-        CREATE INDEX IF NOT EXISTS embeddings_content_hash_idx 
+
+        CREATE INDEX IF NOT EXISTS embeddings_content_hash_idx
         ON embeddings(content_hash);
-        
-        CREATE INDEX IF NOT EXISTS embeddings_metadata_idx 
+
+        CREATE INDEX IF NOT EXISTS embeddings_metadata_idx
         ON embeddings USING GIN(metadata);
-        
-        CREATE INDEX IF NOT EXISTS embeddings_vector_idx 
+
+        CREATE INDEX IF NOT EXISTS embeddings_vector_idx
         ON embeddings USING ivfflat (embedding vector_cosine_ops);
         """
 
         try:
-            with psycopg2.connect(self.connection_string) as conn:
-                with conn.cursor() as cur:
-                    cur.execute(create_table_sql)
-                    conn.commit()
-            logger.info("Created vector tables and indexes")
-
+            conn = await asyncpg.connect(self.connection_string)
+            try:
+                await conn.execute(create_table_sql)
+                logger.info("Created vector tables and indexes")
+            finally:
+                await conn.close()
         except Exception as e:
             logger.error(f"Failed to create vector tables: {e}")
             raise
 
-    def store_embedding(self, embedding: Embedding) -> bool:
+    async def store_embedding(self, embedding: Embedding) -> bool:
         """Store embedding in database"""
         sql = """
         INSERT INTO embeddings (embedding_id, content, content_hash, embedding, metadata, created_at)
-        VALUES (%s, %s, %s, %s, %s, %s)
+        VALUES ($1, $2, $3, $4, $5, $6)
         ON CONFLICT (embedding_id) DO UPDATE SET
             content = EXCLUDED.content,
             content_hash = EXCLUDED.content_hash,
@@ -135,31 +135,30 @@ class PgVectorStore:
         """
 
         try:
-            with psycopg2.connect(self.connection_string) as conn:
-                with conn.cursor() as cur:
-                    cur.execute(
-                        sql,
-                        (
-                            embedding.embedding_id,
-                            embedding.content,
-                            embedding.content_hash,
-                            embedding.embedding_vector,
-                            json.dumps(embedding.metadata),
-                            embedding.created_at,
-                        ),
-                    )
-                    conn.commit()
-            return True
+            conn = await asyncpg.connect(self.connection_string)
+            try:
+                await conn.execute(
+                    sql,
+                    embedding.embedding_id,
+                    embedding.content,
+                    embedding.content_hash,
+                    embedding.embedding_vector,
+                    json.dumps(embedding.metadata),
+                    embedding.created_at,
+                )
+                return True
+            finally:
+                await conn.close()
 
         except Exception as e:
             logger.error(f"Failed to store embedding: {e}")
             return False
 
-    def store_embeddings_batch(self, embeddings: List[Embedding]) -> int:
+    async def store_embeddings_batch(self, embeddings: list[Embedding]) -> int:
         """Store multiple embeddings"""
         sql = """
         INSERT INTO embeddings (embedding_id, content, content_hash, embedding, metadata, created_at)
-        VALUES (%s, %s, %s, %s, %s, %s)
+        VALUES ($1, $2, $3, $4, $5, $6)
         ON CONFLICT (embedding_id) DO UPDATE SET
             content = EXCLUDED.content,
             content_hash = EXCLUDED.content_hash,
@@ -169,115 +168,155 @@ class PgVectorStore:
         """
 
         try:
-            with psycopg2.connect(self.connection_string) as conn:
-                with conn.cursor() as cur:
-                    cur.executemany(
-                        sql,
-                        [
-                            (
-                                emb.embedding_id,
-                                emb.content,
-                                emb.content_hash,
-                                emb.embedding_vector,
-                                json.dumps(emb.metadata),
-                                emb.created_at,
-                            )
-                            for emb in embeddings
-                        ],
-                    )
-                    conn.commit()
-            return len(embeddings)
+            conn = await asyncpg.connect(self.connection_string)
+            try:
+                await conn.executemany(
+                    sql,
+                    [
+                        (
+                            emb.embedding_id,
+                            emb.content,
+                            emb.content_hash,
+                            emb.embedding_vector,
+                            json.dumps(emb.metadata),
+                            emb.created_at,
+                        )
+                        for emb in embeddings
+                    ],
+                )
+                return len(embeddings)
+            finally:
+                await conn.close()
 
         except Exception as e:
             logger.error(f"Failed to store batch embeddings: {e}")
             return 0
 
-    def search_similar(
+    async def search_similar(
         self,
-        query_vector: List[float],
+        query_vector: list[float],
         limit: int = 10,
-        metadata_filter: Optional[Dict[str, Any]] = None,
-    ) -> List[SimilarityResult]:
+        metadata_filter: Optional[dict[str, Any]] = None,
+    ) -> list[SimilarityResult]:
         """Search for similar embeddings"""
         base_sql = """
-        SELECT embedding_id, content, metadata, 
-               1 - (embedding <=> %s) as similarity_score
+        SELECT embedding_id, content, metadata,
+               1 - (embedding <=> $1) as similarity_score
         FROM embeddings
         """
 
         params = [query_vector]
+        param_count = 1
 
         if metadata_filter:
             where_conditions = []
             for key, value in metadata_filter.items():
-                where_conditions.append(f"metadata->>%s = %s")
+                param_count += 1
+                where_conditions.append(
+                    f"metadata->>${param_count} = ${param_count + 1}"
+                )
                 params.extend([key, value])
+                param_count += 1
 
             if where_conditions:
                 base_sql += " WHERE " + " AND ".join(where_conditions)
 
-        base_sql += " ORDER BY embedding <=> %s LIMIT %s"
+        param_count += 1
+        base_sql += f" ORDER BY embedding <=> ${param_count} LIMIT ${param_count + 1}"
         params.extend([query_vector, limit])
 
         try:
-            with psycopg2.connect(self.connection_string) as conn:
-                with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                    cur.execute(base_sql, params)
-                    results = cur.fetchall()
+            conn = await asyncpg.connect(self.connection_string)
+            try:
+                rows = await conn.fetch(base_sql, *params)
 
-                    return [
-                        SimilarityResult(
-                            embedding_id=row["embedding_id"],
-                            content=row["content"],
-                            similarity_score=float(row["similarity_score"]),
-                            metadata=row["metadata"],
-                        )
-                        for row in results
-                    ]
+                return [
+                    SimilarityResult(
+                        embedding_id=row["embedding_id"],
+                        content=row["content"],
+                        similarity_score=float(row["similarity_score"]),
+                        metadata=row["metadata"],
+                    )
+                    for row in rows
+                ]
+            finally:
+                await conn.close()
 
         except Exception as e:
             logger.error(f"Failed to search similar embeddings: {e}")
             return []
 
-    def get_embedding(self, embedding_id: str) -> Optional[Embedding]:
+    async def get_embedding(self, embedding_id: str) -> Optional[Embedding]:
         """Get embedding by ID"""
         sql = """
         SELECT embedding_id, content, content_hash, embedding, metadata, created_at
         FROM embeddings
-        WHERE embedding_id = %s
+        WHERE embedding_id = $1
         """
 
         try:
-            with psycopg2.connect(self.connection_string) as conn:
-                with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                    cur.execute(sql, (embedding_id,))
-                    row = cur.fetchone()
+            conn = await asyncpg.connect(self.connection_string)
+            try:
+                row = await conn.fetchrow(sql, embedding_id)
 
-                    if row:
-                        return Embedding(
-                            embedding_id=row["embedding_id"],
-                            content=row["content"],
-                            content_hash=row["content_hash"],
-                            embedding_vector=row["embedding"],
-                            metadata=row["metadata"],
-                            created_at=row["created_at"],
-                        )
-                    return None
+                if row:
+                    return Embedding(
+                        embedding_id=row["embedding_id"],
+                        content=row["content"],
+                        content_hash=row["content_hash"],
+                        embedding_vector=row["embedding"],
+                        metadata=row["metadata"],
+                        created_at=row["created_at"],
+                    )
+                return None
+            finally:
+                await conn.close()
 
         except Exception as e:
             logger.error(f"Failed to get embedding: {e}")
             return None
 
-    def delete_embedding(self, embedding_id: str) -> bool:
-        """Delete embedding"""
-        sql = "DELETE FROM embeddings WHERE embedding_id = %s"
+    async def get_embedding_by_hash(self, content_hash: str) -> Optional[Embedding]:
+        """Get embedding by content hash"""
+        sql = """
+        SELECT embedding_id, content, content_hash, embedding, metadata, created_at
+        FROM embeddings
+        WHERE content_hash = $1
+        """
 
         try:
-            with psycopg2.connect(self.connection_string) as conn:
-                with conn.cursor() as cur:
-                    cur.execute(sql, (embedding_id,))
-                    conn.commit()
-            return True
+            conn = await asyncpg.connect(self.connection_string)
+            try:
+                row = await conn.fetchrow(sql, content_hash)
+
+                if row:
+                    return Embedding(
+                        embedding_id=row["embedding_id"],
+                        content=row["content"],
+                        content_hash=row["content_hash"],
+                        embedding_vector=row["embedding"],
+                        metadata=row["metadata"],
+                        created_at=row["created_at"],
+                    )
+                return None
+            finally:
+                await conn.close()
+
+        except Exception as e:
+            logger.error(f"Failed to get embedding by hash: {e}")
+            return None
+
+    async def delete_embedding(self, embedding_id: str) -> bool:
+        """Delete embedding"""
+        sql = "DELETE FROM embeddings WHERE embedding_id = $1"
+
+        try:
+            conn = await asyncpg.connect(self.connection_string)
+            try:
+                result = await conn.execute(sql, embedding_id)
+                return result == "DELETE 1"
+            finally:
+                await conn.close()
 
         except Exception as e:
             logger.error(f"Failed to delete embedding: {e}")
@@ -291,7 +330,11 @@ class VectorService:
         self.embedding_service = OpenAIEmbeddingService(openai_api_key)
         self.vector_store = PgVectorStore(pgvector_url)
 
-    def create_function_embedding(self, function_data: Dict[str, Any]) -> str:
+    async def initialize(self):
+        """Initialize the vector store"""
+        await self.vector_store._create_tables()
+
+    async def create_function_embedding(self, function_data: dict[str, Any]) -> str:
         """Create embedding for function"""
         # Create embedding content
         content_parts = [
@@ -310,7 +353,7 @@ class VectorService:
         content_hash = hashlib.sha256(content.encode()).hexdigest()
 
         # Check if embedding already exists
-        existing = self.vector_store.get_embedding_by_hash(content_hash)
+        existing = await self.vector_store.get_embedding_by_hash(content_hash)
         if existing:
             return existing.embedding_id
 
@@ -335,12 +378,14 @@ class VectorService:
             created_at=datetime.now(timezone.utc),
         )
 
-        if self.vector_store.store_embedding(embedding):
+        if await self.vector_store.store_embedding(embedding):
             return embedding_id
         else:
             raise Exception("Failed to store embedding")
 
-    def create_requirement_embedding(self, requirement_data: Dict[str, Any]) -> str:
+    async def create_requirement_embedding(
+        self, requirement_data: dict[str, Any]
+    ) -> str:
         """Create embedding for requirement"""
         content = f"{requirement_data['title']}\n{requirement_data['text']}"
         if requirement_data.get("acceptance_criteria"):
@@ -349,7 +394,7 @@ class VectorService:
         content_hash = hashlib.sha256(content.encode()).hexdigest()
 
         # Check if embedding already exists
-        existing = self.vector_store.get_embedding_by_hash(content_hash)
+        existing = await self.vector_store.get_embedding_by_hash(content_hash)
         if existing:
             return existing.embedding_id
 
@@ -372,20 +417,20 @@ class VectorService:
             created_at=datetime.now(timezone.utc),
         )
 
-        if self.vector_store.store_embedding(embedding):
+        if await self.vector_store.store_embedding(embedding):
             return embedding_id
         else:
             raise Exception("Failed to store requirement embedding")
 
-    def search_similar_functions(
+    async def search_similar_functions(
         self, query_text: str, tenant_id: str, top_k: int = 10
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Search for similar functions"""
         # Create query embedding
         query_vector = self.embedding_service.create_embedding(query_text)
 
         # Search with tenant filter
-        results = self.vector_store.search_similar(
+        results = await self.vector_store.search_similar(
             query_vector=query_vector,
             limit=top_k,
             metadata_filter={"tenant_id": tenant_id},
@@ -411,13 +456,13 @@ class VectorService:
 
         return function_results
 
-    def search_similar_requirements(
+    async def search_similar_requirements(
         self, query_text: str, tenant_id: str, top_k: int = 10
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Search for similar requirements"""
         query_vector = self.embedding_service.create_embedding(query_text)
 
-        results = self.vector_store.search_similar(
+        results = await self.vector_store.search_similar(
             query_vector=query_vector,
             limit=top_k,
             metadata_filter={"tenant_id": tenant_id},
@@ -439,9 +484,9 @@ class VectorService:
 
         return requirement_results
 
-    def batch_create_embeddings(
-        self, items: List[Dict[str, Any]], item_type: str
-    ) -> List[str]:
+    async def batch_create_embeddings(
+        self, items: list[dict[str, Any]], item_type: str
+    ) -> list[str]:
         """Batch create embeddings for multiple items"""
         embedding_ids = []
 
@@ -513,41 +558,42 @@ class VectorService:
             embedding_ids.append(embedding_id)
 
         # Store all embeddings
-        stored_count = self.vector_store.store_embeddings_batch(embeddings)
+        stored_count = await self.vector_store.store_embeddings_batch(embeddings)
 
         if stored_count != len(embeddings):
             logger.warning(f"Only stored {stored_count}/{len(embeddings)} embeddings")
 
         return embedding_ids
 
-    def get_embedding_stats(self, tenant_id: str) -> Dict[str, Any]:
+    async def get_embedding_stats(self, tenant_id: str) -> dict[str, Any]:
         """Get embedding statistics for tenant"""
         sql = """
-        SELECT 
+        SELECT
             COUNT(*) as total_embeddings,
             COUNT(CASE WHEN metadata->>'function_id' IS NOT NULL THEN 1 END) as function_embeddings,
             COUNT(CASE WHEN metadata->>'req_id' IS NOT NULL THEN 1 END) as requirement_embeddings,
             AVG(array_length(embedding, 1)) as avg_dimensions
         FROM embeddings
-        WHERE metadata->>'tenant_id' = %s
+        WHERE metadata->>'tenant_id' = $1
         """
 
         try:
-            with psycopg2.connect(self.vector_store.connection_string) as conn:
-                with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                    cur.execute(sql, (tenant_id,))
-                    result = cur.fetchone()
+            conn = await asyncpg.connect(self.vector_store.connection_string)
+            try:
+                result = await conn.fetchrow(sql, tenant_id)
 
-                    return {
-                        "total_embeddings": result["total_embeddings"],
-                        "function_embeddings": result["function_embeddings"],
-                        "requirement_embeddings": result["requirement_embeddings"],
-                        "avg_dimensions": (
-                            float(result["avg_dimensions"])
-                            if result["avg_dimensions"]
-                            else 0
-                        ),
-                    }
+                return {
+                    "total_embeddings": result["total_embeddings"],
+                    "function_embeddings": result["function_embeddings"],
+                    "requirement_embeddings": result["requirement_embeddings"],
+                    "avg_dimensions": (
+                        float(result["avg_dimensions"])
+                        if result["avg_dimensions"]
+                        else 0
+                    ),
+                }
+            finally:
+                await conn.close()
 
         except Exception as e:
             logger.error(f"Failed to get embedding stats: {e}")
@@ -560,34 +606,41 @@ class VectorService:
 
 
 if __name__ == "__main__":
-    # Test vector service
-    vector_service = VectorService(
-        openai_api_key=os.getenv("OPENAI_API_KEY", "test-key"),
-        pgvector_url=os.getenv(
-            "PGVECTOR_DB_URL", "postgresql://user:pass@localhost/vectordb"
-        ),
-    )
+    import asyncio
 
-    # Test function embedding
-    test_function = {
-        "function_id": "func_123",
-        "tenant_id": "tenant_123",
-        "repo_id": "repo_123",
-        "name": "authenticate_user",
-        "signature": "def authenticate_user(username: str, password: str) -> bool:",
-        "file_path": "src/auth.py",
-        "docstring": "Authenticate user with username and password",
-        "language": "python",
-        "complexity_score": 3,
-    }
+    async def test_vector_service():
+        # Test vector service
+        vector_service = VectorService(
+            openai_api_key=os.getenv("OPENAI_API_KEY", "test-key"),
+            pgvector_url=os.getenv(
+                "PGVECTOR_DB_URL", "postgresql://user:pass@localhost/vectordb"
+            ),
+        )
 
-    embedding_id = vector_service.create_function_embedding(test_function)
-    print(f"Created function embedding: {embedding_id}")
+        await vector_service.initialize()
 
-    # Test similarity search
-    results = vector_service.search_similar_functions(
-        "user authentication", "tenant_123", top_k=5
-    )
-    print(f"Found {len(results)} similar functions")
-    for result in results:
-        print(f"  - {result['signature']}: {result['similarity_score']:.3f}")
+        # Test function embedding
+        test_function = {
+            "function_id": "func_123",
+            "tenant_id": "tenant_123",
+            "repo_id": "repo_123",
+            "name": "authenticate_user",
+            "signature": "def authenticate_user(username: str, password: str) -> bool:",
+            "file_path": "src/auth.py",
+            "docstring": "Authenticate user with username and password",
+            "language": "python",
+            "complexity_score": 3,
+        }
+
+        embedding_id = await vector_service.create_function_embedding(test_function)
+        print(f"Created function embedding: {embedding_id}")
+
+        # Test similarity search
+        results = await vector_service.search_similar_functions(
+            "user authentication", "tenant_123", top_k=5
+        )
+        print(f"Found {len(results)} similar functions")
+        for result in results:
+            print(f"  - {result['signature']}: {result['similarity_score']:.3f}")
+
+    asyncio.run(test_vector_service())

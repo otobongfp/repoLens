@@ -1,11 +1,14 @@
 # Redis-based session management
-import redis.asyncio as redis
 import json
+import logging
 import uuid
 from datetime import datetime, timedelta
-from typing import Optional, Dict, Any
+from typing import Any, Optional
+
+import redis.asyncio as redis
+
 from app.core.config import settings
-import logging
+
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +40,7 @@ class RedisSessionManager:
     async def create_session(
         self,
         user_id: str,
-        session_data: Dict[str, Any],
+        session_data: dict[str, Any],
         expires_in: int = 3600,  # 1 hour
     ) -> str:
         """Create a new session"""
@@ -65,7 +68,7 @@ class RedisSessionManager:
         logger.info(f"Created session {session_id} for user {user_id}")
         return session_id
 
-    async def get_session(self, session_id: str) -> Optional[Dict[str, Any]]:
+    async def get_session(self, session_id: str) -> Optional[dict[str, Any]]:
         """Get session data"""
         if not self.redis_client:
             await self.connect()
@@ -86,7 +89,7 @@ class RedisSessionManager:
 
         return None
 
-    async def update_session(self, session_id: str, data: Dict[str, Any]) -> bool:
+    async def update_session(self, session_id: str, data: dict[str, Any]) -> bool:
         """Update session data"""
         if not self.redis_client:
             await self.connect()
@@ -192,7 +195,7 @@ class RedisSessionManager:
         result = await self.redis_client.delete(refresh_key)
 
         if result:
-            logger.info(f"Deleted refresh token")
+            logger.info("Deleted refresh token")
             return True
 
         return False
@@ -213,7 +216,7 @@ class RedisSessionManager:
 
         return expired_count
 
-    async def get_session_stats(self) -> Dict[str, Any]:
+    async def get_session_stats(self) -> dict[str, Any]:
         """Get session statistics"""
         if not self.redis_client:
             await self.connect()

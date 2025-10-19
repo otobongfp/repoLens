@@ -1,7 +1,8 @@
-from pydantic import BaseModel, Field
-from typing import Optional, Dict, Any, List
 from datetime import datetime
 from enum import Enum
+from typing import Any, Optional
+
+from pydantic import BaseModel, Field
 
 
 class SourceType(str, Enum):
@@ -67,6 +68,7 @@ class ProjectResponse(BaseModel):
     storage_config: Optional[StorageConfig] = None
     status: ProjectStatus
     tenant_id: str
+    owner_id: str
     created_at: datetime
     updated_at: datetime
     last_analyzed: Optional[datetime] = None
@@ -78,7 +80,7 @@ class ProjectResponse(BaseModel):
 class ProjectListResponse(BaseModel):
     """List of projects response"""
 
-    projects: List[ProjectResponse]
+    projects: list[ProjectResponse]
     total: int
     page: int
     page_size: int
@@ -88,7 +90,6 @@ class ProjectAnalysisRequest(BaseModel):
     """Request to analyze a project"""
 
     project_id: str
-    tenant_id: str
     analysis_type: str = "full"  # full, incremental, requirements_only
     force_refresh: bool = False
 
@@ -101,7 +102,7 @@ class ProjectAnalysisResponse(BaseModel):
     status: str
     started_at: datetime
     estimated_completion: Optional[datetime] = None
-    progress: Dict[str, Any] = {}
+    progress: dict[str, Any] = {}
 
 
 class EnvironmentConfig(BaseModel):

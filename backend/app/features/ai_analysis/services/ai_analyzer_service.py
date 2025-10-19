@@ -1,9 +1,11 @@
 import logging
 import re
-from typing import Dict, List, Any, Optional
+from typing import Any
+
 from openai import OpenAI
+
 from app.core.config import settings
-import os
+
 
 logger = logging.getLogger(__name__)
 
@@ -25,10 +27,10 @@ class AIAnalyzerService:
                 self.client = None
                 self.enabled = False
 
-    async def analyze_codebase(self, graph_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def analyze_codebase(self, graph_data: dict[str, Any]) -> dict[str, Any]:
         if not self.enabled or not self.client:
             return self._get_disabled_response()
-        
+
         try:
             nodes = graph_data.get("nodes", [])
             edges = graph_data.get("edges", [])
@@ -83,8 +85,8 @@ class AIAnalyzerService:
             }
 
     async def analyze_function(
-        self, function_node: Dict[str, Any], graph_data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, function_node: dict[str, Any], graph_data: dict[str, Any]
+    ) -> dict[str, Any]:
         if not self.enabled or not self.client:
             return self._get_disabled_response()
 
@@ -106,8 +108,8 @@ class AIAnalyzerService:
             logger.info(
                 f"Function analysis completed for: {function_node.get('label', 'Unknown')}"
             )
-                return results
-                
+            return results
+
         except Exception as e:
             logger.error(f"Function analysis failed: {e}")
             return {
@@ -119,8 +121,8 @@ class AIAnalyzerService:
             }
 
     async def answer_question(
-        self, graph_data: Dict[str, Any], question: str
-    ) -> Dict[str, Any]:
+        self, graph_data: dict[str, Any], question: str
+    ) -> dict[str, Any]:
         if not self.enabled or not self.client:
             return {"error": "AI service is disabled"}
 
@@ -141,7 +143,7 @@ class AIAnalyzerService:
             logger.error(f"Question answering failed: {e}")
             return {"error": f"Failed to answer question: {str(e)}"}
 
-    async def get_status(self) -> Dict[str, Any]:
+    async def get_status(self) -> dict[str, Any]:
         return {
             "enabled": self.enabled,
             "openai_configured": bool(settings.openai_api_key),
@@ -150,7 +152,7 @@ class AIAnalyzerService:
             "temperature": settings.ai_temperature,
         }
 
-    async def get_cache_stats(self) -> Dict[str, Any]:
+    async def get_cache_stats(self) -> dict[str, Any]:
         return {
             "cache_size": len(self._analysis_cache),
             "cache_keys": list(self._analysis_cache.keys())[:10],
@@ -160,7 +162,7 @@ class AIAnalyzerService:
         self._analysis_cache.clear()
         logger.info("AI analysis cache cleared")
 
-    def _get_disabled_response(self) -> Dict[str, Any]:
+    def _get_disabled_response(self) -> dict[str, Any]:
         return {
             "error": "AI analysis is disabled. Please configure OpenAI API key.",
             "complexity_score": 0,
@@ -226,7 +228,7 @@ Provide a helpful answer about the codebase.
 """
         return prompt
 
-    def _parse_combined_analysis(self, analysis_text: str) -> Dict[str, Any]:
+    def _parse_combined_analysis(self, analysis_text: str) -> dict[str, Any]:
         try:
             import json
 
@@ -247,7 +249,7 @@ Provide a helpful answer about the codebase.
             "insights": analysis_text[:500],
         }
 
-    def _parse_function_analysis(self, analysis_text: str) -> Dict[str, Any]:
+    def _parse_function_analysis(self, analysis_text: str) -> dict[str, Any]:
         try:
             import json
 

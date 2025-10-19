@@ -1,11 +1,12 @@
 # RepoLens API - Admin Endpoints
 # Admin and tenant management API routes
-from fastapi import APIRouter, Depends, HTTPException, status
-from typing import Dict, Any
+from typing import Any
 
-from ...shared.models.api_models import UsageMetrics
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from ...core.dependencies import get_db, require_permissions
+from ...shared.models.api_models import UsageMetrics
+
 
 router = APIRouter(
     prefix="/admin",
@@ -28,7 +29,7 @@ router = APIRouter(
 )
 async def get_usage(
     tenant_id: str,
-    user: Dict[str, Any] = Depends(require_permissions(["admin"])),
+    user: dict[str, Any] = Depends(require_permissions(["admin"])),
     db=Depends(get_db),
 ):
     """Get tenant usage metrics"""

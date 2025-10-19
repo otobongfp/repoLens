@@ -11,6 +11,7 @@ interface User {
   avatar_url?: string;
   is_verified: boolean;
   role: string;
+  tenant_id: string;
 }
 
 interface AuthContextType {

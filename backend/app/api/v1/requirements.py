@@ -1,12 +1,17 @@
 # RepoLens API - Requirements Endpoints
 # Requirements management API routes
-from fastapi import APIRouter, Depends, HTTPException, status
-from typing import Dict, Any
-from datetime import datetime, timezone
-import uuid
+from typing import Any
 
-from ...services.requirement_service import RequirementService
+from fastapi import APIRouter, Depends, HTTPException, status
+
+from ...core.dependencies import (
+    authenticate,
+    get_audit,
+    get_requirement,
+    require_permissions,
+)
 from ...services.audit_service import AuditService
+from ...services.requirement_service import RequirementService
 from ...shared.models.api_models import (
     RequirementExtractRequest,
     RequirementExtractResponse,
@@ -16,14 +21,6 @@ from ...shared.models.api_models import (
     RequirementVerifyResponse,
 )
 
-from ...core.dependencies import (
-    get_requirement,
-    get_audit,
-    authenticate,
-    require_permissions,
-    get_tenant_id,
-    get_db,
-)
 
 router = APIRouter(
     prefix="/requirements",
@@ -47,7 +44,7 @@ async def extract_requirements(
     request: RequirementExtractRequest,
     requirement: RequirementService = Depends(get_requirement),
     audit: AuditService = Depends(get_audit),
-    user: Dict[str, Any] = Depends(authenticate),
+    user: dict[str, Any] = Depends(authenticate),
 ):
     """Extract requirements from documents"""
     try:
@@ -101,7 +98,7 @@ async def match_requirement(
     request: RequirementMatchRequest,
     requirement: RequirementService = Depends(get_requirement),
     audit: AuditService = Depends(get_audit),
-    user: Dict[str, Any] = Depends(authenticate),
+    user: dict[str, Any] = Depends(authenticate),
 ):
     """Match requirements to code implementation"""
     try:
@@ -155,7 +152,7 @@ async def verify_requirement(
     request: RequirementVerifyRequest,
     requirement: RequirementService = Depends(get_requirement),
     audit: AuditService = Depends(get_audit),
-    user: Dict[str, Any] = Depends(require_permissions(["admin", "developer"])),
+    user: dict[str, Any] = Depends(require_permissions(["admin", "developer"])),
 ):
     """Verify requirement implementation"""
     try:

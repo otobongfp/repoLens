@@ -1,22 +1,20 @@
 # RepoLens Backend - Services
 # Repository analysis services
-import os
 import ast
 import re
 from pathlib import Path
-from typing import List, Dict, Any, Optional, Tuple
-import mimetypes
+from typing import Optional
+
 from .models import (
-    Node,
     Edge,
-    FileInfo,
-    FileContent,
-    FunctionSummary,
-    RepositorySummary,
-    RepoGraphResponse,
-    EnhancedRepoGraphResponse,
-    NodeType,
     EdgeType,
+    FileContent,
+    FileInfo,
+    FunctionSummary,
+    Node,
+    NodeType,
+    RepoGraphResponse,
+    RepositorySummary,
 )
 
 
@@ -47,7 +45,7 @@ class CodeParser:
         ext = Path(file_path).suffix.lower()
         return self.supported_extensions.get(ext)
 
-    def parse_python_file(self, file_path: str, content: str) -> List[FunctionSummary]:
+    def parse_python_file(self, file_path: str, content: str) -> list[FunctionSummary]:
         """Parse Python file using AST"""
         try:
             tree = ast.parse(content)
@@ -71,7 +69,7 @@ class CodeParser:
 
     def parse_javascript_file(
         self, file_path: str, content: str
-    ) -> List[FunctionSummary]:
+    ) -> list[FunctionSummary]:
         """Parse JavaScript/TypeScript file using regex"""
         functions = []
 
@@ -100,7 +98,7 @@ class CodeParser:
 
         return functions
 
-    def _find_function_end(self, lines: List[str], start_idx: int) -> Optional[int]:
+    def _find_function_end(self, lines: list[str], start_idx: int) -> Optional[int]:
         """Find the end line of a function (simplified)"""
         brace_count = 0
         for i in range(start_idx, len(lines)):
@@ -110,7 +108,7 @@ class CodeParser:
                 return i + 1
         return None
 
-    def parse_file(self, file_path: str, content: str) -> List[FunctionSummary]:
+    def parse_file(self, file_path: str, content: str) -> list[FunctionSummary]:
         """Parse file based on its language"""
         language = self.get_language_from_extension(file_path)
 
@@ -129,8 +127,8 @@ class RepositoryAnalyzer:
     def __init__(self, root_path: str):
         self.root_path = Path(root_path)
         self.parser = CodeParser()
-        self.nodes: List[Node] = []
-        self.edges: List[Edge] = []
+        self.nodes: list[Node] = []
+        self.edges: list[Edge] = []
 
     def analyze_repository(self) -> RepoGraphResponse:
         """Analyze entire repository and generate graph"""
@@ -156,7 +154,7 @@ class RepositoryAnalyzer:
 
         return RepoGraphResponse(nodes=self.nodes, edges=self.edges, summary=summary)
 
-    def _get_all_files(self) -> List[FileInfo]:
+    def _get_all_files(self) -> list[FileInfo]:
         """Get all code files in repository"""
         files = []
 
@@ -231,7 +229,7 @@ class RepositoryAnalyzer:
         # In a real implementation, you'd analyze imports and function calls
         pass
 
-    def _generate_summary(self, files: List[FileInfo]) -> RepositorySummary:
+    def _generate_summary(self, files: list[FileInfo]) -> RepositorySummary:
         """Generate repository summary"""
         languages = list(set(f.language for f in files if f.language))
         total_functions = len([n for n in self.nodes if n.type == NodeType.FUNCTION])
@@ -245,7 +243,7 @@ class RepositoryAnalyzer:
             main_technologies=languages[:5],  # Top 5 languages
         )
 
-    def get_files(self) -> List[FileInfo]:
+    def get_files(self) -> list[FileInfo]:
         """Get list of all files"""
         return self._get_all_files()
 
@@ -270,7 +268,7 @@ class RepositoryAnalyzer:
             print(f"Error reading file {file_path}: {e}")
             return FileContent(path=file_path, content="")
 
-    def search_symbols(self, query: str) -> List[Node]:
+    def search_symbols(self, query: str) -> list[Node]:
         """Search for symbols/functions in the repository"""
         results = []
         query_lower = query.lower()

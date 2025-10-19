@@ -1,16 +1,18 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from typing import Dict, Any
+from typing import Any
 
+from fastapi import APIRouter, Depends, HTTPException, status
+
+from ...core.dependencies import get_ai_service
 from ...features.ai_analysis.models.ai_models import (
     AIAnalysisRequest,
-    FunctionAnalysisRequest,
-    AskRequest,
     AIAnalysisResponse,
-    AskResponse,
     AIStatusResponse,
+    AskRequest,
+    AskResponse,
+    FunctionAnalysisRequest,
 )
 from ...features.ai_analysis.services.ai_analyzer_service import AIAnalyzerService
-from ...core.dependencies import get_ai_service
+
 
 router = APIRouter(prefix="/ai", tags=["AI Analysis"])
 
@@ -31,7 +33,7 @@ async def analyze_codebase(
         )
 
 
-@router.post("/analyze/function", response_model=Dict[str, Any])
+@router.post("/analyze/function", response_model=dict[str, Any])
 async def analyze_function(
     request: FunctionAnalysisRequest,
     ai_service: AIAnalyzerService = Depends(get_ai_service),

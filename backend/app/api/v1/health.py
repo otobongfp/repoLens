@@ -1,15 +1,13 @@
 # RepoLens API - Health Endpoints
 # Health and system API routes
-from fastapi import APIRouter, Depends, HTTPException, status
-from datetime import datetime
 import os
-import psutil
-from typing import Dict, Any
+from datetime import datetime
 
-from ...core.config import settings
-from ...core.dependencies import get_repository_service, get_ai_service
-from ...features.repository.services import RepositoryAnalyzer
-from ...features.ai_analysis.services.ai_analyzer_service import AIAnalyzerService
+import psutil
+from fastapi import APIRouter, HTTPException, status
+
+from ...core.dependencies import get_ai_service, get_repository_service
+
 
 router = APIRouter(
     prefix="/health",

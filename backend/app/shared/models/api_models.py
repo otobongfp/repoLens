@@ -1,8 +1,9 @@
 # Shared API models
-from pydantic import BaseModel, Field
-from typing import List, Optional, Dict, Any, Union
-from enum import Enum
 from datetime import datetime, timezone
+from enum import Enum
+from typing import Any, Optional
+
+from pydantic import BaseModel, Field
 
 
 # Enums
@@ -58,7 +59,7 @@ class RequirementExtractRequest(BaseModel):
 
 
 class RequirementExtractResponse(BaseModel):
-    requirements: List[Dict[str, Any]]
+    requirements: list[dict[str, Any]]
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
@@ -68,7 +69,7 @@ class RequirementMatchRequest(BaseModel):
 
 
 class RequirementMatchResponse(BaseModel):
-    candidates: List[Dict[str, Any]]
+    candidates: list[dict[str, Any]]
 
 
 class RequirementVerifyRequest(BaseModel):
@@ -90,7 +91,7 @@ class ActionProposalRequest(BaseModel):
     proposer_id: Optional[str] = None
     patch_s3: str
     rationale: str
-    tests: List[str] = []
+    tests: list[str] = []
 
 
 class ActionProposalResponse(BaseModel):
@@ -109,4 +110,4 @@ class UsageMetrics(BaseModel):
     vector_count: int
     storage_bytes: int
     api_requests: int
-    limits: Dict[str, Any]
+    limits: dict[str, Any]

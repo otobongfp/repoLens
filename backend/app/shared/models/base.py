@@ -1,6 +1,7 @@
 # RepoLens Backend - Base
+from typing import Any, Optional
+
 from pydantic import BaseModel, Field
-from typing import Optional, Dict, Any
 
 
 class BaseNode(BaseModel):
@@ -10,7 +11,7 @@ class BaseNode(BaseModel):
     label: str
     type: str
     path: Optional[str] = None
-    meta: Optional[Dict[str, Any]] = None
+    meta: Optional[dict[str, Any]] = None
 
 
 class BaseEdge(BaseModel):
@@ -19,7 +20,7 @@ class BaseEdge(BaseModel):
     from_: str = Field(..., alias="from")
     to: str
     type: str
-    meta: Optional[Dict[str, Any]] = None
+    meta: Optional[dict[str, Any]] = None
 
 
 class BaseRequest(BaseModel):

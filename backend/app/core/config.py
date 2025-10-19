@@ -1,7 +1,9 @@
 # Core configuration and settings
-from pydantic_settings import BaseSettings
+import json
 from typing import Optional
-import os
+
+from pydantic import field_validator
+from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
@@ -14,6 +16,14 @@ class Settings(BaseSettings):
 
     # Database Configuration
     database_url: str = "postgresql+asyncpg://postgres:password@localhost:5432/repolens"
+
+    @field_validator("database_url", mode="before")
+    @classmethod
+    def convert_to_asyncpg(cls, v):
+        """Convert postgresql:// URLs to postgresql+asyncpg:// for asyncpg compatibility"""
+        if isinstance(v, str) and v.startswith("postgresql://"):
+            return v.replace("postgresql://", "postgresql+asyncpg://")
+        return v
 
     # Redis Configuration
     redis_url: str = "redis://localhost:6379"
@@ -79,6 +89,18 @@ class Settings(BaseSettings):
         "https://www.repolens.org",
         "https://app.repolens.org",
     ]
+
+    @field_validator("cors_origins", mode="before")
+    @classmethod
+    def parse_cors_origins(cls, v):
+        """Parse CORS origins from environment variable"""
+        if isinstance(v, str):
+            try:
+                return json.loads(v)
+            except json.JSONDecodeError:
+                # If not valid JSON, split by comma
+                return [origin.strip() for origin in v.split(",") if origin.strip()]
+        return v
 
     class Config:
         env_file = ".env"

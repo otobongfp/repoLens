@@ -1,16 +1,16 @@
 # RepoLens Neo4j Service
 # Production-grade graph database operations with bulk-upsert capabilities
 
-import os
 import logging
-from typing import List, Dict, Any, Optional, Tuple
-from datetime import datetime, timezone
+import os
 import uuid
-from dataclasses import dataclass, asdict
-import json
+from dataclasses import dataclass
+from datetime import datetime
+from typing import Any, Optional
+
 
 try:
-    from neo4j import GraphDatabase, Driver, Session
+    from neo4j import Driver, GraphDatabase, Session
 except ImportError:
     raise ImportError("neo4j driver not installed. Run: pip install neo4j")
 
@@ -22,8 +22,8 @@ class GraphNode:
     """Graph node representation"""
 
     node_id: str
-    labels: List[str]
-    properties: Dict[str, Any]
+    labels: list[str]
+    properties: dict[str, Any]
     tenant_id: str
 
 
@@ -34,7 +34,7 @@ class GraphEdge:
     from_node: str
     to_node: str
     relationship_type: str
-    properties: Dict[str, Any]
+    properties: dict[str, Any]
     tenant_id: str
 
 
@@ -47,7 +47,7 @@ class BulkOperation:
     nodes_updated: int
     edges_created: int
     edges_updated: int
-    errors: List[str]
+    errors: list[str]
     duration_ms: int
 
 
@@ -133,7 +133,7 @@ class Neo4jService:
             logger.info("Closed Neo4j connection")
 
     def bulk_upsert_functions(
-        self, functions: List[Dict[str, Any]], tenant_id: str
+        self, functions: list[dict[str, Any]], tenant_id: str
     ) -> BulkOperation:
         """Bulk upsert functions using UNWIND pattern"""
         self._ensure_connected()
@@ -143,12 +143,12 @@ class Neo4jService:
         cypher = """
         UNWIND $functions AS fn
         MERGE (file:File {tenant_id: fn.tenant_id, repo_id: fn.repo_id, path: fn.file_path})
-          ON CREATE SET file.lang = fn.language, 
-                        file.file_hash = fn.file_hash, 
+          ON CREATE SET file.lang = fn.language,
+                        file.file_hash = fn.file_hash,
                         file.parse_status = 'parsed',
                         file.created_at = datetime()
           ON MATCH SET file.last_indexed_at = datetime()
-        
+
         MERGE (func:Function {tenant_id: fn.tenant_id, repo_id: fn.repo_id, qualified_name: fn.qualified_name})
           ON CREATE SET func.name = fn.name,
                         func.signature = fn.signature,
@@ -162,7 +162,7 @@ class Neo4jService:
           ON MATCH SET func.last_indexed_at = datetime(),
                         func.code_hash = fn.code_hash,
                         func.snippet_s3_path = fn.snippet_s3_path
-        
+
         MERGE (file)-[:CONTAINS]->(func)
         """
 
@@ -196,7 +196,7 @@ class Neo4jService:
             )
 
     def bulk_upsert_classes(
-        self, classes: List[Dict[str, Any]], tenant_id: str
+        self, classes: list[dict[str, Any]], tenant_id: str
     ) -> BulkOperation:
         """Bulk upsert classes"""
         self._ensure_connected()
@@ -210,7 +210,7 @@ class Neo4jService:
                         file.file_hash = cls.file_hash,
                         file.parse_status = 'parsed',
                         file.created_at = datetime()
-        
+
         MERGE (class:Class {tenant_id: cls.tenant_id, repo_id: cls.repo_id, qualified_name: cls.qualified_name})
           ON CREATE SET class.name = cls.name,
                         class.start_line = cls.start_line,
@@ -219,7 +219,7 @@ class Neo4jService:
                         class.docstring = cls.docstring,
                         class.created_at = datetime()
           ON MATCH SET class.last_indexed_at = datetime()
-        
+
         MERGE (file)-[:CONTAINS]->(class)
         """
 
@@ -294,7 +294,7 @@ class Neo4jService:
             return False
 
     def create_call_edges(
-        self, calls: List[Dict[str, Any]], tenant_id: str
+        self, calls: list[dict[str, Any]], tenant_id: str
     ) -> BulkOperation:
         """Create CALLS edges between functions"""
         operation_id = str(uuid.uuid4())
@@ -342,7 +342,7 @@ class Neo4jService:
             )
 
     def create_import_edges(
-        self, imports: List[Dict[str, Any]], tenant_id: str
+        self, imports: list[dict[str, Any]], tenant_id: str
     ) -> BulkOperation:
         """Create IMPORT edges"""
         operation_id = str(uuid.uuid4())
@@ -355,7 +355,7 @@ class Neo4jService:
           ON CREATE SET module.version = imp.version,
                         module.purl = imp.purl,
                         module.created_at = datetime()
-        
+
         MERGE (file)-[e:IMPORTS]->(module)
         SET e.line = imp.line,
             e.snippet_s3 = imp.snippet_s3,
@@ -394,7 +394,7 @@ class Neo4jService:
 
     def search_functions(
         self, query: str, tenant_id: str, limit: int = 10
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Search functions by name or signature"""
         cypher = """
         MATCH (f:Function {tenant_id: $tenant_id})
@@ -422,7 +422,7 @@ class Neo4jService:
 
     def get_function_call_graph(
         self, function_id: str, tenant_id: str, depth: int = 2
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get call graph for a function"""
         cypher = """
         MATCH (f:Function {function_id: $function_id, tenant_id: $tenant_id})
@@ -467,7 +467,7 @@ class Neo4jService:
             logger.error(f"Call graph query failed: {e}")
             return {"nodes": [], "edges": []}
 
-    def get_repository_stats(self, repo_id: str, tenant_id: str) -> Dict[str, Any]:
+    def get_repository_stats(self, repo_id: str, tenant_id: str) -> dict[str, Any]:
         """Get repository statistics"""
         cypher = """
         MATCH (r:Repo {repo_id: $repo_id, tenant_id: $tenant_id})
@@ -475,7 +475,7 @@ class Neo4jService:
         OPTIONAL MATCH (f)-[:CONTAINS]->(func:Function)
         OPTIONAL MATCH (f)-[:CONTAINS]->(c:Class)
         OPTIONAL MATCH (f)-[:IMPORTS]->(m:ExternalModule)
-        
+
         RETURN count(DISTINCT f) as file_count,
                count(DISTINCT func) as function_count,
                count(DISTINCT c) as class_count,
@@ -520,16 +520,16 @@ class Neo4jService:
         cypher = """
         MATCH (r:Repo {repo_id: $repo_id, tenant_id: $tenant_id})
         DETACH DELETE r
-        
+
         MATCH (f:File {repo_id: $repo_id, tenant_id: $tenant_id})
         DETACH DELETE f
-        
+
         MATCH (func:Function {repo_id: $repo_id, tenant_id: $tenant_id})
         DETACH DELETE func
-        
+
         MATCH (c:Class {repo_id: $repo_id, tenant_id: $tenant_id})
         DETACH DELETE c
-        
+
         MATCH (s:Symbol {repo_id: $repo_id, tenant_id: $tenant_id})
         DETACH DELETE s
         """
@@ -544,7 +544,7 @@ class Neo4jService:
             logger.error(f"Repository deletion failed: {e}")
             return False
 
-    def create_audit_event(self, event: Dict[str, Any]) -> bool:
+    def create_audit_event(self, event: dict[str, Any]) -> bool:
         """Create audit event"""
         cypher = """
         CREATE (a:AuditEvent {
@@ -574,8 +574,8 @@ class GraphService:
         self.neo4j = neo4j_service
 
     def index_repository(
-        self, repo_data: Dict[str, Any], parsed_files: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, repo_data: dict[str, Any], parsed_files: dict[str, Any]
+    ) -> dict[str, Any]:
         """Index entire repository into graph"""
         tenant_id = repo_data["tenant_id"]
         repo_id = repo_data["repo_id"]

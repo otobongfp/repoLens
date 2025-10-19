@@ -1,15 +1,16 @@
 # RepoLens Requirement Service
 # LLM-based requirement extraction and matching with exact prompts
 
-import os
-import json
 import hashlib
+import json
 import logging
-from typing import List, Dict, Any, Optional, Tuple
-from datetime import datetime, timezone
+import os
+import re
 import uuid
 from dataclasses import dataclass
-import re
+from datetime import datetime, timezone
+from typing import Any, Optional
+
 
 try:
     import openai
@@ -26,11 +27,11 @@ class ExtractedRequirement:
     req_id: str
     title: str
     text: str
-    acceptance_criteria: List[str]
+    acceptance_criteria: list[str]
     priority: str
     source: str
     confidence: float
-    extraction_provenance: Dict[str, Any]
+    extraction_provenance: dict[str, Any]
 
 
 @dataclass
@@ -43,7 +44,7 @@ class RequirementMatch:
     match_method: str
     path: str
     signature: str
-    call_graph_context: List[str]
+    call_graph_context: list[str]
 
 
 @dataclass
@@ -78,7 +79,7 @@ REQUIREMENT JSON FORMAT:
     "id": "<generated but deterministic id: SHA256(tenant_id + repo_id + first 64 chars of text)>",
     "title": "<short title, 6 words max>",
     "text": "<full requirement text>",
-    "acceptance_criteria": ["..."], 
+    "acceptance_criteria": ["..."],
     "priority": "P1|P2|P3|unknown",
     "source": "<source identifier e.g., filename or URL>",
     "confidence": 0.0-1.0
@@ -88,7 +89,7 @@ REQUIREMENT JSON FORMAT:
 
     def extract_requirements(
         self, document_text: str, tenant_id: str, repo_id: str, source: str
-    ) -> List[ExtractedRequirement]:
+    ) -> list[ExtractedRequirement]:
         """Extract requirements from document using exact prompt"""
         try:
             # Replace placeholder in prompt
@@ -176,7 +177,7 @@ Candidates:
 
     def match_requirement_to_code(
         self, requirement: ExtractedRequirement, tenant_id: str, top_k: int = 10
-    ) -> List[RequirementMatch]:
+    ) -> list[RequirementMatch]:
         """Match requirement to code using vector search and re-ranking"""
         try:
             # Step 1: Vector search for top-K candidates
@@ -213,8 +214,8 @@ Candidates:
             return []
 
     def _rerank_candidates(
-        self, requirement: ExtractedRequirement, candidates: List[Dict[str, Any]]
-    ) -> List[Dict[str, Any]]:
+        self, requirement: ExtractedRequirement, candidates: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
         """Re-rank candidates using structural features"""
         reranked = []
 
@@ -340,13 +341,13 @@ class RequirementVerifier:
             v.verdict = $verdict,
             v.note = $note,
             v.verified_at = datetime()
-        
+
         // Update IMPLEMENTED_BY edge confidence
         MATCH (req:Requirement)-[e:IMPLEMENTED_BY]->(func:Function)
         WHERE req.req_id = v.req_id AND func.function_id = v.function_id
         SET e.verified_by = $user_id,
             e.verified_at = datetime(),
-            e.confidence = CASE 
+            e.confidence = CASE
                 WHEN $verdict = 'accepted' THEN min(1.0, e.confidence + 0.1)
                 WHEN $verdict = 'rejected' THEN max(0.0, e.confidence - 0.2)
                 ELSE e.confidence
@@ -371,17 +372,17 @@ class RequirementVerifier:
             logger.error(f"Failed to submit verification: {e}")
             return False
 
-    def get_verification_context(self, verification_id: str) -> Dict[str, Any]:
+    def get_verification_context(self, verification_id: str) -> dict[str, Any]:
         """Get verification context for human review"""
         cypher = """
         MATCH (v:Verification {verification_id: $verification_id})
         MATCH (req:Requirement {req_id: v.req_id})
         MATCH (func:Function {function_id: v.function_id})
         MATCH (file:File)-[:CONTAINS]->(func)
-        
+
         OPTIONAL MATCH (func)-[:CALLS]->(called:Function)
         OPTIONAL MATCH (caller:Function)-[:CALLS]->(func)
-        
+
         RETURN req.text as requirement_text,
                req.acceptance_criteria as acceptance_criteria,
                func.name as function_name,
@@ -427,7 +428,7 @@ class RequirementService:
 
     def process_requirement_document(
         self, document_text: str, tenant_id: str, repo_id: str, source: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Process requirement document end-to-end"""
         # Step 1: Extract requirements
         requirements = self.extractor.extract_requirements(
@@ -502,13 +503,13 @@ class RequirementService:
 
     def get_requirement_matches(
         self, req_id: str, tenant_id: str
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Get all matches for a requirement"""
         cypher = """
         MATCH (req:Requirement {req_id: $req_id, tenant_id: $tenant_id})
         MATCH (req)-[e:IMPLEMENTED_BY]->(func:Function)
         MATCH (file:File)-[:CONTAINS]->(func)
-        
+
         RETURN func.function_id as function_id,
                func.name as function_name,
                func.signature as signature,

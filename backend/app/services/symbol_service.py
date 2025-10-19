@@ -1,14 +1,13 @@
 # RepoLens Symbol Resolver Service
 # Symbol resolution with heuristics and call graph analysis
 
-import os
 import logging
+import os
 import re
-from typing import List, Dict, Any, Optional, Tuple, Set
-from datetime import datetime, timezone
 import uuid
 from dataclasses import dataclass
-from pathlib import Path
+from typing import Any, Optional
+
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +37,7 @@ class SymbolDefinition:
     line_number: int
     signature: Optional[str]
     docstring: Optional[str]
-    parameters: List[str]
+    parameters: list[str]
     return_type: Optional[str]
 
 
@@ -49,8 +48,8 @@ class ResolutionResult:
     reference: SymbolReference
     definition: Optional[SymbolDefinition]
     confidence: float
-    resolution_path: List[str]
-    errors: List[str]
+    resolution_path: list[str]
+    errors: list[str]
 
 
 class SymbolResolver:
@@ -58,8 +57,8 @@ class SymbolResolver:
 
     def __init__(self, neo4j_service):
         self.neo4j_service = neo4j_service
-        self.symbol_cache: Dict[str, SymbolDefinition] = {}
-        self.import_cache: Dict[str, List[str]] = {}
+        self.symbol_cache: dict[str, SymbolDefinition] = {}
+        self.import_cache: dict[str, list[str]] = {}
 
         # Language-specific patterns
         self.patterns = {
@@ -193,7 +192,7 @@ class SymbolResolver:
         """Determine symbol type from context"""
         try:
             # Read file content around the line
-            with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+            with open(file_path, encoding="utf-8", errors="ignore") as f:
                 lines = f.readlines()
 
             context_start = max(0, line_number - 5)
@@ -234,7 +233,7 @@ class SymbolResolver:
         language: str,
         tenant_id: str,
         repo_id: str,
-    ) -> Tuple[Optional[SymbolDefinition], float]:
+    ) -> tuple[Optional[SymbolDefinition], float]:
         """Resolve symbol in local file scope"""
         try:
             # Query Neo4j for symbols in the same file
@@ -287,7 +286,7 @@ class SymbolResolver:
         language: str,
         tenant_id: str,
         repo_id: str,
-    ) -> Tuple[Optional[SymbolDefinition], float]:
+    ) -> tuple[Optional[SymbolDefinition], float]:
         """Resolve symbol through import statements"""
         try:
             # Get imports for the file
@@ -308,10 +307,10 @@ class SymbolResolver:
             logger.error(f"Import resolution failed: {e}")
             return None, 0.0
 
-    def _get_file_imports(self, file_path: str, language: str) -> List[Dict[str, str]]:
+    def _get_file_imports(self, file_path: str, language: str) -> list[dict[str, str]]:
         """Extract import statements from file"""
         try:
-            with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+            with open(file_path, encoding="utf-8", errors="ignore") as f:
                 content = f.read()
 
             imports = []
@@ -448,7 +447,7 @@ class SymbolResolver:
         language: str,
         tenant_id: str,
         repo_id: str,
-    ) -> Tuple[Optional[SymbolDefinition], float]:
+    ) -> tuple[Optional[SymbolDefinition], float]:
         """Resolve symbol across files in the repository"""
         try:
             # Query Neo4j for symbols with the same name in other files
@@ -500,7 +499,7 @@ class SymbolResolver:
 
     def _resolve_call_graph(
         self, symbol_name: str, file_path: str, tenant_id: str, repo_id: str
-    ) -> Tuple[Optional[SymbolDefinition], float]:
+    ) -> tuple[Optional[SymbolDefinition], float]:
         """Resolve symbol using call graph analysis"""
         try:
             # Find functions that call this symbol
@@ -554,7 +553,7 @@ class SymbolResolver:
         language: str,
         tenant_id: str,
         repo_id: str,
-    ) -> Tuple[Optional[SymbolDefinition], float]:
+    ) -> tuple[Optional[SymbolDefinition], float]:
         """Resolve symbol using heuristics"""
         try:
             # Heuristic 1: Common naming patterns
@@ -649,10 +648,10 @@ class SymbolResolver:
 
     def create_call_edges(
         self, file_path: str, language: str, tenant_id: str, repo_id: str
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Create call edges for a file"""
         try:
-            with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+            with open(file_path, encoding="utf-8", errors="ignore") as f:
                 content = f.read()
 
             calls = []
@@ -800,10 +799,10 @@ class SymbolService:
 
     def resolve_file_symbols(
         self, file_path: str, language: str, tenant_id: str, repo_id: str
-    ) -> List[ResolutionResult]:
+    ) -> list[ResolutionResult]:
         """Resolve all symbols in a file"""
         try:
-            with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+            with open(file_path, encoding="utf-8", errors="ignore") as f:
                 content = f.read()
 
             symbols = self._extract_symbols(content, language)
@@ -826,7 +825,7 @@ class SymbolService:
             logger.error(f"Failed to resolve file symbols: {e}")
             return []
 
-    def _extract_symbols(self, content: str, language: str) -> List[Dict[str, Any]]:
+    def _extract_symbols(self, content: str, language: str) -> list[dict[str, Any]]:
         """Extract symbols from content"""
         symbols = []
         lines = content.split("\n")
@@ -879,7 +878,6 @@ class SymbolService:
 
 if __name__ == "__main__":
     # Test symbol resolver
-    from neo4j import GraphDatabase
 
     neo4j_service = Neo4jService(
         uri=os.getenv("NEO4J_URI", "bolt://localhost:7687"),

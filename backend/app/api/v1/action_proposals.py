@@ -1,24 +1,25 @@
 # RepoLens API - Action_Proposals Endpoints
 # Action proposals API routes
-from fastapi import APIRouter, Depends, HTTPException, status
-from typing import Dict, Any
-from datetime import datetime, timezone
 import uuid
+from datetime import datetime, timezone
+from typing import Any
 
-from ...shared.models.api_models import (
-    ActionProposalRequest,
-    ActionProposalResponse,
-    ActionApprovalRequest,
-    ProposalStatus,
-)
+from fastapi import APIRouter, Depends, HTTPException, status
 
 # Import dependencies from core
 from ...core.dependencies import (
-    get_tenant_id,
-    get_db,
     authenticate,
+    get_db,
+    get_tenant_id,
     require_permissions,
 )
+from ...shared.models.api_models import (
+    ActionApprovalRequest,
+    ActionProposalRequest,
+    ActionProposalResponse,
+    ProposalStatus,
+)
+
 
 router = APIRouter(
     prefix="/action-proposals",
@@ -42,7 +43,7 @@ async def create_proposal(
     request: ActionProposalRequest,
     tenant_id: str = Depends(get_tenant_id),
     db=Depends(get_db),
-    user: Dict[str, Any] = Depends(authenticate),
+    user: dict[str, Any] = Depends(authenticate),
 ):
     """Create a new action proposal for code changes"""
     try:
@@ -98,7 +99,7 @@ async def approve_proposal(
     request: ActionApprovalRequest,
     tenant_id: str = Depends(get_tenant_id),
     db=Depends(get_db),
-    user: Dict[str, Any] = Depends(require_permissions(["approve"])),
+    user: dict[str, Any] = Depends(require_permissions(["approve"])),
 ):
     """Approve an action proposal"""
     try:
@@ -135,7 +136,7 @@ async def reject_proposal(
     request: ActionApprovalRequest,
     tenant_id: str = Depends(get_tenant_id),
     db=Depends(get_db),
-    user: Dict[str, Any] = Depends(require_permissions(["approve"])),
+    user: dict[str, Any] = Depends(require_permissions(["approve"])),
 ):
     """Reject an action proposal"""
     try:
@@ -170,7 +171,7 @@ async def get_proposal(
     proposal_id: str,
     tenant_id: str = Depends(get_tenant_id),
     db=Depends(get_db),
-    user: Dict[str, Any] = Depends(authenticate),
+    user: dict[str, Any] = Depends(authenticate),
 ):
     """Get an action proposal by ID"""
     try:

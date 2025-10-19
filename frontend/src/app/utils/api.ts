@@ -265,15 +265,55 @@ export function useRepolensApi() {
   }> {
     const res = await fetch(`${apiBase}/api/v1/projects/${projectId}/analyze`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders(),
       body: JSON.stringify({
         project_id: projectId,
-        tenant_id: 'tenant_123', // TODO: Get from context
         analysis_type: analysisType,
         force_refresh: forceRefresh,
       }),
     });
     if (!res.ok) throw new Error('Failed to start project analysis');
+    return await res.json();
+  }
+
+  async function getAnalysisProgress(
+    projectId: string,
+    analysisId: string,
+  ): Promise<{
+    analysis_id: string;
+    project_id: string;
+    status: string;
+    progress_percentage: number;
+    current_step: string;
+    total_files: number;
+    parsed_files: number;
+    total_functions: number;
+    analyzed_functions: number;
+    error_message?: string;
+    started_at?: string;
+    completed_at?: string;
+  }> {
+    const res = await fetch(
+      `${apiBase}/api/v1/projects/${projectId}/analysis/${analysisId}/progress`,
+      {
+        headers: getAuthHeaders(),
+      },
+    );
+    if (!res.ok) throw new Error('Failed to get analysis progress');
+    return await res.json();
+  }
+
+  async function getAnalysisResult(
+    projectId: string,
+    analysisId: string,
+  ): Promise<any> {
+    const res = await fetch(
+      `${apiBase}/api/v1/projects/${projectId}/analysis/${analysisId}/result`,
+      {
+        headers: getAuthHeaders(),
+      },
+    );
+    if (!res.ok) throw new Error('Failed to get analysis result');
     return await res.json();
   }
 
@@ -338,6 +378,8 @@ export function useRepolensApi() {
     updateProject,
     deleteProject,
     analyzeProject,
+    getAnalysisProgress,
+    getAnalysisResult,
     getProjectAnalyses,
     // Settings
     getSettings,

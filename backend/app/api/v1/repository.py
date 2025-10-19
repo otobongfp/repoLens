@@ -1,28 +1,22 @@
 # RepoLens API - Repository Endpoints
 # Repository analysis API routes
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from typing import List, Optional
-from datetime import datetime
 
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+
+from ...core.dependencies import get_repository_service
 from ...features.repository.models import (
     AnalyzeProjectRequest,
-    EnhancedAnalyzeRequest,
     AnalyzeRequest,
-    FileQuery,
-    SearchQuery,
-    RepoGraphResponse,
-    EnhancedRepoGraphResponse,
     AnalyzeResponse,
-    FileInfo,
+    EnhancedAnalyzeRequest,
+    EnhancedRepoGraphResponse,
     FileContent,
-    Node,
+    FileInfo,
+    RepoGraphResponse,
+    SearchQuery,
 )
 from ...features.repository.services import RepositoryAnalyzer
-from ...core.dependencies import (
-    get_repository_service,
-    validate_repository_path,
-    validate_file_path,
-)
+
 
 router = APIRouter(
     prefix="/repository",
@@ -111,7 +105,7 @@ async def analyze_file(
 
 @router.get(
     "/files",
-    response_model=List[FileInfo],
+    response_model=list[FileInfo],
     summary="List repository files",
     description="Get list of files in repository with metadata",
     responses={
@@ -162,7 +156,7 @@ async def get_file_content(
 
 @router.post(
     "/search",
-    response_model=List[FileInfo],
+    response_model=list[FileInfo],
     summary="Search repository",
     description="Search for files and content in repository",
     responses={

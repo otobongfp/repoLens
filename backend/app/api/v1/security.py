@@ -1,12 +1,13 @@
 # RepoLens API - Security Endpoints
 # Security assessment API routes
-from fastapi import APIRouter, Depends, HTTPException, status
-from typing import Dict, Any
+from typing import Any
 
-from ...services.security_service import SecurityService
+from fastapi import APIRouter, Depends
+
+from ...core.dependencies import authenticate, get_audit, get_security, get_tenant_id
 from ...services.audit_service import AuditService
+from ...services.security_service import SecurityService
 
-from ...core.dependencies import get_tenant_id, get_security, get_audit, authenticate
 
 router = APIRouter(
     prefix="/security",
@@ -31,7 +32,7 @@ async def assess_security(
     tenant_id: str = Depends(get_tenant_id),
     security: SecurityService = Depends(get_security),
     audit: AuditService = Depends(get_audit),
-    user: Dict[str, Any] = Depends(authenticate),
+    user: dict[str, Any] = Depends(authenticate),
 ):
     """Perform security assessment"""
 

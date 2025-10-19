@@ -1,48 +1,43 @@
 # RepoLens API
 # Production FastAPI application with multi-tenant SaaS architecture
-from fastapi import FastAPI, HTTPException, Depends, status, BackgroundTasks
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from pydantic import BaseModel, Field
-from typing import List, Optional, Dict, Any, Union
-from enum import Enum
-import os
 import logging
-from datetime import datetime, timezone
-import uuid
-import jwt
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
+from enum import Enum
+from typing import Any, Optional
+
 from dotenv import load_dotenv
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import HTTPBearer
+from pydantic import BaseModel, Field
+
 
 # Load environment variables
 load_dotenv()
 
-# Import services
-from app.services.neo4j_service import Neo4jService, GraphService
-from app.services.parser_service import ParserService
-from app.services.requirement_service import RequirementService
-from app.services.vector_service import VectorService
-from app.services.symbol_service import SymbolService
-from app.services.security_service import SecurityService
-from app.services.action_service import ActionService
-from app.services.audit_service import AuditService
-
 # Import API routers
 from app.api.v1 import (
-    ai,
-    repository,
-    health,
-    repositories,
-    requirements,
     action_proposals,
-    security,
     admin,
-    projects,
-    settings,
+    ai,
     auth,
+    health,
+    projects,
+    repositories,
+    repository,
+    requirements,
+    security,
+    settings,
 )
 from app.core.config import settings as app_settings
+from app.services.audit_service import AuditService
+
+# Import services
+from app.services.neo4j_service import GraphService, Neo4jService
+from app.services.parser_service import ParserService
 from app.services.session_manager import session_manager
+
 
 # Configure logging
 logging.basicConfig(
@@ -115,7 +110,7 @@ class RequirementExtractRequest(BaseModel):
 
 
 class RequirementExtractResponse(BaseModel):
-    requirements: List[Dict[str, Any]]
+    requirements: list[dict[str, Any]]
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
@@ -125,7 +120,7 @@ class RequirementMatchRequest(BaseModel):
 
 
 class RequirementMatchResponse(BaseModel):
-    candidates: List[Dict[str, Any]]
+    candidates: list[dict[str, Any]]
 
 
 class RequirementVerifyRequest(BaseModel):
@@ -146,7 +141,7 @@ class ActionProposalRequest(BaseModel):
     proposer_id: Optional[str] = None
     patch_s3: str
     rationale: str
-    tests: List[str] = []
+    tests: list[str] = []
 
 
 class ActionProposalResponse(BaseModel):
@@ -164,25 +159,11 @@ class UsageMetrics(BaseModel):
     vector_count: int
     storage_bytes: int
     api_requests: int
-    limits: Dict[str, Any]
+    limits: dict[str, Any]
 
 
 # Import dependencies from core
-from app.core.dependencies import (
-    get_neo4j,
-    get_parser,
-    get_vector,
-    get_requirement,
-    get_symbol,
-    get_security,
-    get_action,
-    get_audit,
-    authenticate,
-    require_permissions,
-    get_tenant_id,
-    get_db,
-    process_repository_analysis,
-)
+from app.core.dependencies import get_db, process_repository_analysis
 
 
 # FastAPI App
@@ -255,7 +236,7 @@ app.include_router(settings.router, prefix="/api/v1")
 
 # Background task
 async def process_repository_analysis(
-    repo_data: Dict[str, Any],
+    repo_data: dict[str, Any],
     repo_url: str,
     neo4j: Neo4jService,
     parser: ParserService,

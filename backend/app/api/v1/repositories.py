@@ -1,29 +1,29 @@
 # RepoLens API - Repositories Endpoints
 # Repository management API routes
-from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
-from typing import Dict, Any
-from datetime import datetime, timezone
 import uuid
+from datetime import datetime, timezone
+from typing import Any
 
-from ...services.neo4j_service import Neo4jService
-from ...services.parser_service import ParserService
-from ...services.audit_service import AuditService
-from ...shared.models.api_models import (
-    RepoAnalysisRequest,
-    RepoAnalysisResponse,
-    IndexingStatus,
-)
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 
 from ...core.dependencies import (
-    get_neo4j,
-    get_parser,
+    authenticate,
     get_audit,
     get_db,
-    authenticate,
-    require_permissions,
-    get_tenant_id,
+    get_neo4j,
+    get_parser,
     process_repository_analysis,
+    require_permissions,
 )
+from ...services.audit_service import AuditService
+from ...services.neo4j_service import Neo4jService
+from ...services.parser_service import ParserService
+from ...shared.models.api_models import (
+    IndexingStatus,
+    RepoAnalysisRequest,
+    RepoAnalysisResponse,
+)
+
 
 router = APIRouter(
     prefix="/repositories",
@@ -49,7 +49,7 @@ async def analyze_repo(
     neo4j: Neo4jService = Depends(get_neo4j),
     parser: ParserService = Depends(get_parser),
     audit: AuditService = Depends(get_audit),
-    user: Dict[str, Any] = Depends(authenticate),
+    user: dict[str, Any] = Depends(authenticate),
 ):
     """Initiate repository analysis and indexing"""
     try:
@@ -112,7 +112,7 @@ async def analyze_repo(
 async def delete_repo(
     repo_id: str,
     db=Depends(get_db),
-    user: Dict[str, Any] = Depends(require_permissions(["admin"])),
+    user: dict[str, Any] = Depends(require_permissions(["admin"])),
 ):
     """Delete repository and all associated data"""
     try:
@@ -156,7 +156,7 @@ async def delete_repo(
         500: {"description": "Failed to get status"},
     },
 )
-async def get_repo_status(repo_id: str, user: Dict[str, Any] = Depends(authenticate)):
+async def get_repo_status(repo_id: str, user: dict[str, Any] = Depends(authenticate)):
     """Get analysis status for a repository"""
     try:
         # Get tenant ID from user

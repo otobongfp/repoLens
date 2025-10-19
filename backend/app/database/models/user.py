@@ -1,9 +1,26 @@
-from sqlalchemy import Column, String, DateTime, Boolean, Text, ForeignKey
+import uuid
+from enum import Enum
+
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
+
 from app.database.connection import Base
-import uuid
+
+
+# Enums
+class AuthProvider(str, Enum):
+    EMAIL = "email"
+    GOOGLE = "google"
+    GITHUB = "github"
+
+
+class UserRole(str, Enum):
+    ADMIN = "admin"
+    USER = "user"
+    DEVELOPER = "developer"
+
 
 # String constants
 AUTH_PROVIDERS = ["email", "google", "github"]

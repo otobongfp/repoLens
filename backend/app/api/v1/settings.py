@@ -1,21 +1,22 @@
 # RepoLens API - Settings Endpoints
 # Settings Management API Routes
-from fastapi import APIRouter, Depends, HTTPException, status
-from typing import Dict, Any
 from datetime import datetime, timezone
+from typing import Any
 
-from ...shared.models.project_models import (
-    UserSettingsRequest,
-    UserSettingsResponse,
-    EnvironmentConfig,
-)
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from ...core.dependencies import (
-    get_tenant_id,
-    get_db,
     authenticate,
+    get_db,
+    get_tenant_id,
     require_permissions,
 )
+from ...shared.models.project_models import (
+    EnvironmentConfig,
+    UserSettingsRequest,
+    UserSettingsResponse,
+)
+
 
 router = APIRouter(
     prefix="/settings",
@@ -38,7 +39,7 @@ router = APIRouter(
 async def get_settings(
     tenant_id: str = Depends(get_tenant_id),
     db=Depends(get_db),
-    user: Dict[str, Any] = Depends(authenticate),
+    user: dict[str, Any] = Depends(authenticate),
 ):
     """Get user settings and preferences"""
     try:
@@ -80,7 +81,7 @@ async def update_settings(
     request: UserSettingsRequest,
     tenant_id: str = Depends(get_tenant_id),
     db=Depends(get_db),
-    user: Dict[str, Any] = Depends(require_permissions(["admin"])),
+    user: dict[str, Any] = Depends(require_permissions(["admin"])),
 ):
     """Update user settings and preferences"""
     try:
@@ -117,7 +118,7 @@ async def test_connection(
     config: EnvironmentConfig,
     tenant_id: str = Depends(get_tenant_id),
     db=Depends(get_db),
-    user: Dict[str, Any] = Depends(authenticate),
+    user: dict[str, Any] = Depends(authenticate),
 ):
     """Test database and service connections"""
     try:
@@ -150,7 +151,7 @@ async def test_connection(
 async def get_environment_info(
     tenant_id: str = Depends(get_tenant_id),
     db=Depends(get_db),
-    user: Dict[str, Any] = Depends(authenticate),
+    user: dict[str, Any] = Depends(authenticate),
 ):
     """Get environment information"""
     try:

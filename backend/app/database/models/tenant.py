@@ -1,18 +1,28 @@
-from sqlalchemy import (
-    Column,
-    String,
-    DateTime,
-    Boolean,
-    Text,
-    ForeignKey,
-    Integer,
-    BigInteger,
-)
+import uuid
+from enum import Enum
+
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
+
 from app.database.connection import Base
-import uuid
+
+
+# Enums
+class TenantPlan(str, Enum):
+    FREE = "free"
+    PRO = "pro"
+    BUSINESS = "business"
+    ENTERPRISE = "enterprise"
+
+
+class TenantMemberRole(str, Enum):
+    OWNER = "owner"
+    ADMIN = "admin"
+    MEMBER = "member"
+    VIEWER = "viewer"
+
 
 # String constants
 TENANT_PLANS = ["free", "pro", "business", "enterprise"]

@@ -1,23 +1,23 @@
 # Core dependencies and dependency injection
-from fastapi import Depends, HTTPException, status, Request
-from typing import Generator, Dict, Any
 import os
-from pathlib import Path
-import boto3
+from typing import Any
 
-from .config import settings
-from ..shared.models.project_models import EnvironmentConfig
-from ..features.repository.services import RepositoryAnalyzer
+import boto3
+from fastapi import Depends, HTTPException, Request, status
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from ..features.ai_analysis.services.ai_analyzer_service import AIAnalyzerService
-from ..services.neo4j_service import Neo4jService, GraphService
-from ..services.parser_service import ParserService
-from ..services.requirement_service import RequirementService
-from ..services.vector_service import VectorService
-from ..services.symbol_service import SymbolService
-from ..services.security_service import SecurityService
+from ..features.repository.services import RepositoryAnalyzer
 from ..services.action_service import ActionService
 from ..services.audit_service import AuditService
+from ..services.neo4j_service import Neo4jService
+from ..services.parser_service import ParserService
 from ..services.project_service import ProjectService, StorageManager
+from ..services.requirement_service import RequirementService
+from ..services.security_service import SecurityService
+from ..services.symbol_service import SymbolService
+from ..services.vector_service import VectorService
+from .config import settings
 
 
 # Feature-specific services
@@ -143,28 +143,6 @@ def get_audit_service(neo4j_service: Neo4jService) -> AuditService:
     return AuditService(neo4j_service)
 
 
-def get_project_service() -> ProjectService:
-    """Get project service instance"""
-    # Create environment config from settings
-    from ..shared.models.project_models import EnvironmentConfig
-
-    env_config = EnvironmentConfig(
-        openai_api_key=os.getenv("OPENAI_API_KEY"),
-        aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-        aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-        aws_region=os.getenv("AWS_REGION"),
-        s3_bucket=os.getenv("S3_BUCKET"),
-        neo4j_uri=os.getenv("NEO4J_URI"),
-        neo4j_user=os.getenv("NEO4J_USER"),
-        neo4j_password=os.getenv("NEO4J_PASSWORD"),
-        use_local_backend=True,
-        backend_url="http://localhost:8000",
-    )
-
-    storage_manager = StorageManager(env_config)
-    return ProjectService(storage_manager)
-
-
 # Global service instances - lazy initialization
 _neo4j_service = None
 _parser_service = None
@@ -247,7 +225,7 @@ def _get_project_service_instance() -> ProjectService:
     """Get or create project service instance"""
     global _project_service
     if _project_service is None:
-        _project_service = get_project_service()
+        _project_service = ProjectService()
     return _project_service
 
 
@@ -284,13 +262,13 @@ async def get_audit() -> AuditService:
     return _get_audit_service_instance()
 
 
-async def get_project() -> ProjectService:
+async def get_project_service() -> ProjectService:
     return _get_project_service_instance()
 
 
 # Background task functions
 async def process_repository_analysis(
-    repo_data: Dict[str, Any],
+    repo_data: dict[str, Any],
     repo_url: str,
     neo4j: Neo4jService,
     parser: ParserService,
@@ -342,7 +320,64 @@ async def process_repository_analysis(
 
 
 # Authentication and authorization dependencies
-async def authenticate(request: Request) -> Dict[str, Any]:
+async def get_user_tenant(user_id: str, db: AsyncSession) -> str:
+    """Get the tenant for the user (should already exist from registration)"""
+    import logging
+
+    from fastapi import HTTPException, status
+    from sqlalchemy import select
+
+    from app.database.models.tenant import TenantMember
+
+    logger = logging.getLogger(__name__)
+
+    try:
+        # Get user's tenant membership (should exist from registration)
+        result = await db.execute(
+            select(TenantMember).where(TenantMember.user_id == user_id)
+        )
+        membership = result.scalars().first()
+
+        logger.info(
+            f"Looking for tenant for user {user_id}, found membership: {membership}"
+        )
+
+        if membership:
+            logger.info(f"Found tenant {membership.tenant_id} for user {user_id}")
+            return str(membership.tenant_id)
+
+        # If no membership found, try to create one (for existing users)
+        logger.warning(
+            f"No tenant membership found for user {user_id}, attempting to create one"
+        )
+        from app.database.models.user import User
+        from app.services.auth_service import auth_service
+
+        # Get the user
+        user_result = await db.execute(select(User).where(User.id == user_id))
+        user = user_result.scalar_one_or_none()
+
+        if user:
+            # Create a tenant for this existing user
+            tenant = await auth_service.create_default_tenant(db, user)
+            logger.info(f"Created tenant {tenant.id} for existing user {user_id}")
+            return str(tenant.id)
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+            )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get user tenant: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to get user tenant",
+        )
+
+
+async def authenticate(request: Request) -> dict[str, Any]:
     """Real authentication using JWT tokens"""
     from app.services.auth_service import auth_service
 
@@ -375,11 +410,30 @@ async def authenticate(request: Request) -> Dict[str, Any]:
                 detail="Session expired or invalid",
             )
 
-        # For now, use a hardcoded tenant_id to avoid database query issues
-        # TODO: Get actual tenant from database
+        # Get tenant for user using a proper database session
+        from app.database.connection import get_db
+
+        tenant_id = None
+        async for db in get_db():
+            try:
+                tenant_id = await get_user_tenant(user_id, db)
+                break
+            except Exception as e:
+                logger.error(f"Failed to get tenant for user {user_id}: {e}")
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Failed to get user tenant information",
+                )
+
+        if not tenant_id:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="User tenant information not available",
+            )
+
         return {
             "user_id": user_id,
-            "tenant_id": "bb84125f-736d-450d-aa5a-922cc44181ba",  # Hardcoded for test user
+            "tenant_id": tenant_id,
             "email": user_data.get("email"),
             "role": user_data.get("role"),
             "session_id": session_id,
@@ -387,7 +441,7 @@ async def authenticate(request: Request) -> Dict[str, Any]:
 
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication failed"
         )
@@ -396,7 +450,7 @@ async def authenticate(request: Request) -> Dict[str, Any]:
 def require_permissions(required: list):
     """Require specific permissions - returns a dependency function"""
 
-    def check_permissions(user: Dict[str, Any] = Depends(authenticate)):
+    def check_permissions(user: dict[str, Any] = Depends(authenticate)):
         user_permissions = user.get("permissions", [])
         if not any(p in user_permissions for p in required):
             raise HTTPException(
@@ -408,7 +462,7 @@ def require_permissions(required: list):
     return check_permissions
 
 
-async def get_tenant_id(user: Dict[str, Any] = Depends(authenticate)) -> str:
+async def get_tenant_id(user: dict[str, Any] = Depends(authenticate)) -> str:
     """Get tenant ID from user"""
     return user["tenant_id"]
 

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRepolensApi, ProjectCreateRequest } from '../utils/api';
+import { useAuth } from '../context/AuthProvider';
 import {
   XIcon,
   FolderIcon,
@@ -26,6 +27,7 @@ export default function ProjectCreationModal({
   onClose,
   onProjectCreated,
 }: ProjectCreationModalProps) {
+  const { user } = useAuth();
   const { createProject } = useRepolensApi();
   const [step, setStep] = useState(1);
   const [sourceType, setSourceType] = useState<SourceType>('local');
@@ -80,10 +82,18 @@ export default function ProjectCreationModal({
       setLoading(true);
       setError(null);
 
+      if (!user?.tenant_id) {
+        setError(
+          'User tenant information not available. Please try logging out and logging back in.',
+        );
+        console.error('User object:', user);
+        return;
+      }
+
       const projectData: ProjectCreateRequest = {
         name: formData.name,
         description: formData.description || undefined,
-        tenant_id: 'bb84125f-736d-450d-aa5a-922cc44181ba', // TODO: Get from auth context
+        tenant_id: user.tenant_id,
         source_config: {
           type: sourceType,
           ...(sourceType === 'local' && { local_path: formData.local_path }),

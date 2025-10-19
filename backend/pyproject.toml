@@ -58,25 +58,97 @@ prepend_sys_path = [
 # This section defines scripts or Python functions that are run
 # on newly generated revision scripts.  See the documentation for further
 # detail and examples
-# [[tool.alembic.post_write_hooks]]
+[[tool.alembic.post_write_hooks]]
 # format using "black" - use the console_scripts runner,
 # against the "black" entrypoint
-# name = "black"
-# type = "console_scripts"
-# entrypoint = "black"
-# options = "-l 79 REVISION_SCRIPT_FILENAME"
-#
-# [[tool.alembic.post_write_hooks]]
+name = "black"
+type = "console_scripts"
+entrypoint = "black"
+options = "-l 88 REVISION_SCRIPT_FILENAME"
+
+[[tool.alembic.post_write_hooks]]
 # lint with attempts to fix using "ruff" - use the module runner, against the "ruff" module
-# name = "ruff"
-# type = "module"
-# module = "ruff"
-# options = "check --fix REVISION_SCRIPT_FILENAME"
-#
-# [[tool.alembic.post_write_hooks]]
-# Alternatively, use the exec runner to execute a binary found on your PATH
-# name = "ruff"
-# type = "exec"
-# executable = "ruff"
-# options = "check --fix REVISION_SCRIPT_FILENAME"
+name = "ruff"
+type = "module"
+module = "ruff"
+options = "check --fix REVISION_SCRIPT_FILENAME"
+
+# Code formatting and linting tools
+[tool.black]
+line-length = 88
+target-version = ['py39', 'py310', 'py311', 'py312']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 88
+known_first_party = ["app"]
+known_third_party = ["fastapi", "sqlalchemy", "neo4j", "openai", "pydantic"]
+sections = ["FUTURE", "STDLIB", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]
+lines_after_imports = 2
+
+[tool.ruff]
+target-version = "py39"
+line-length = 88
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "B",  # flake8-bugbear
+    "C4", # flake8-comprehensions
+    "UP", # pyupgrade
+    "ARG001", # unused-function-args
+    "SIM", # flake8-simplify
+    "TCH", # flake8-type-checking
+]
+ignore = [
+    "E501",  # line too long, handled by black
+    "B008",  # do not perform function calls in argument defaults
+    "C901",  # too complex
+    "W191",  # indentation contains tabs
+]
+
+[tool.ruff.per-file-ignores]
+"__init__.py" = ["F401"]
+"tests/**/*" = ["ARG001", "ARG002"]
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+
+[[tool.mypy.overrides]]
+module = [
+    "neo4j.*",
+    "tree_sitter.*",
+    "tree_sitter_python.*",
+    "tree_sitter_javascript.*",
+    "tree_sitter_typescript.*",
+]
+ignore_missing_imports = true
 
